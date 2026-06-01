@@ -7,38 +7,45 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, f
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from db import db
+from flask_mail import Mail, Message
 import tempfile
+
+from db import db
+from models import *
+from helpers import *
+from quiz_service import *
 
 load_dotenv()
 
+# ----------------------------- CONFIGURATION -----------------------------
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-me')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialisation des extensions
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = 'no-reply@albatros.com'
+
+mail = Mail(app)
+
 db.init_app(app)
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
 jwt = JWTManager(app)
 
-# Flask-Login
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = "Veuillez vous connecter."
-
-# Importer les modèles après initialisation de db
-from models import *
-from helpers import *
-from quiz_service import *
-from content_manager import *
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --------------------- Décorateur de rôle ---------------------
+# ----------------------------- DÉCORATEUR DE RÔLE (HTML) -----------------------------
 def role_required(*allowed_roles):
     def decorator(f):
         @wraps(f)
@@ -51,7 +58,25 @@ def role_required(*allowed_roles):
         return decorated_function
     return decorator
 
-# --------------------- Routes HTML (optionnelles) ---------------------
+# ----------------------------- DÉCORATEUR DE RÔLE JWT (API) -----------------------------
+def jwt_role_required(*allowed_roles):
+    def decorator(f):
+        @wraps(f)
+        @jwt_required()
+        def decorated_function(*args, **kwargs):
+            user_id = get_jwt_identity()
+            user = User.query.get(user_id)
+            if not user or user.role not in allowed_roles:
+                return jsonify({'msg': 'Accès non autorisé'}), 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# ================================ ROUTES HTML ================================
+@app.route('/')
+def index():
+    return redirect(url_for('login'))
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -59,14 +84,20 @@ def register():
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
+
         if User.query.filter((User.massar == massar) | (User.username == username) | (User.email == email)).first():
             flash('Massar, nom ou email déjà utilisé.', 'danger')
             return redirect(url_for('register'))
-        user = User(massar=massar, username=username, email=email, role='student')
-        user.set_password(password)
-        db.session.add(user)
+
+        if PendingUser.query.filter((PendingUser.massar == massar) | (PendingUser.username == username) | (PendingUser.email == email)).first():
+            flash('Une demande d’inscription est déjà en attente.', 'danger')
+            return redirect(url_for('register'))
+
+        pending = PendingUser(massar=massar, username=username, email=email, role='student')
+        pending.set_password(password)
+        db.session.add(pending)
         db.session.commit()
-        flash('Inscription réussie !', 'success')
+        flash('Inscription en attente de validation. Vous recevrez un email une fois approuvé.', 'success')
         return redirect(url_for('login'))
     return render_template('register.html')
 
@@ -97,11 +128,7 @@ def logout():
     flash('Déconnecté.', 'info')
     return redirect(url_for('login'))
 
-@app.route('/')
-def index():
-    return redirect(url_for('login'))
-
-# --------------------- Routes API ---------------------
+# ================================ ROUTES API ================================
 @app.route('/api/auth/register', methods=['POST'])
 def api_register():
     data = request.get_json()
@@ -111,13 +138,18 @@ def api_register():
     password = data.get('password')
     if not all([massar, username, email, password]):
         return jsonify({'msg': 'Champs manquants'}), 400
+
     if User.query.filter((User.massar == massar) | (User.username == username) | (User.email == email)).first():
         return jsonify({'msg': 'Massar, nom ou email déjà utilisé'}), 400
-    user = User(massar=massar, username=username, email=email, role='student')
-    user.set_password(password)
-    db.session.add(user)
+
+    if PendingUser.query.filter((PendingUser.massar == massar) | (PendingUser.username == username) | (PendingUser.email == email)).first():
+        return jsonify({'msg': 'Une demande d’inscription est déjà en attente'}), 400
+
+    pending = PendingUser(massar=massar, username=username, email=email, role='student')
+    pending.set_password(password)
+    db.session.add(pending)
     db.session.commit()
-    return jsonify({'msg': 'Inscription réussie'}), 201
+    return jsonify({'msg': 'Inscription en attente de validation. Vous recevrez un email une fois approuvé.'}), 201
 
 @app.route('/api/auth/login', methods=['POST'])
 def api_login():
@@ -141,12 +173,12 @@ def api_user_me():
     user = User.query.get(user_id)
     return jsonify(user.to_dict()), 200
 
+# ---------- Élève ----------
 @app.route('/api/student/gaps', methods=['GET'])
 @jwt_required()
 def api_student_gaps():
     user_id = get_jwt_identity()
-    gaps = get_gaps(user_id)
-    return jsonify(gaps), 200
+    return jsonify(get_gaps(user_id)), 200
 
 @app.route('/api/student/exercises', methods=['GET'])
 @jwt_required()
@@ -178,24 +210,41 @@ def api_student_calendar():
         })
     return jsonify(calendar_data), 200
 
-@app.route('/api/quizzes', methods=['GET'])
+@app.route('/api/student/courses', methods=['GET'])
 @jwt_required()
-def get_quizzes():
-    quizzes = Quiz.query.all()
-    return jsonify([{"id": q.id, "title": q.title, "difficulty": q.difficulty} for q in quizzes])
+def get_student_courses():
+    user_id = get_jwt_identity()
+    courses = Course.query.all()
+    result = []
+    for course in courses:
+        quizzes = Quiz.query.filter_by(subject_id=course.subject_id).all()
+        quiz_ids = [q.id for q in quizzes]
+        if quiz_ids:
+            quiz_results = QuizResult.query.filter(
+                QuizResult.user_id == user_id,
+                QuizResult.quiz_id.in_(quiz_ids)
+            ).all()
+            user_score = round(sum(r.score for r in quiz_results) / len(quiz_results)) if quiz_results else 0
+        else:
+            user_score = 0
+        result.append({
+            "id": course.id,
+            "title": course.title,
+            "description": course.description,
+            "user_score": user_score
+        })
+    return jsonify(result), 200
 
-@app.route('/api/quiz/<int:quiz_id>/questions', methods=['GET'])
+@app.route('/api/student/results', methods=['GET'])
 @jwt_required()
-def get_quiz_questions(quiz_id):
-    questions = Question.query.filter_by(quiz_id=quiz_id).all()
+def api_student_results():
+    user_id = get_jwt_identity()
+    results = QuizResult.query.filter_by(user_id=user_id).order_by(QuizResult.date_taken.desc()).all()
     return jsonify([{
-        "id": q.id,
-        "text": q.text,
-        "option1": q.option1,
-        "option2": q.option2,
-        "option3": q.option3,
-        "option4": q.option4,
-    } for q in questions])
+        "quiz_id": r.quiz_id,
+        "score": r.score,
+        "date": r.date_taken.isoformat()
+    } for r in results]), 200
 
 @app.route('/api/student/recommendations', methods=['GET'])
 @jwt_required()
@@ -211,41 +260,7 @@ def api_student_recommendations():
             "subject": ex["difficulty"].capitalize() if ex["difficulty"] else "General",
             "description": ex["question"][:100],
         })
-    return jsonify(recommendations)
-
-@app.route('/api/student/results', methods=['GET'])
-@jwt_required()
-def api_student_results():
-    user_id = get_jwt_identity()
-    results = QuizResult.query.filter_by(user_id=user_id).order_by(QuizResult.date_taken.desc()).all()
-    return jsonify([{
-        "quiz_id": r.quiz_id,
-        "score": r.score,
-        "date": r.date_taken.isoformat()
-    } for r in results])
-
-@app.route('/api/student/courses', methods=['GET'])
-@jwt_required()
-def get_student_courses():
-    user_id = get_jwt_identity()
-    courses = Course.query.all()
-    result = []
-    for course in courses:
-        # Calcul du score personnel : moyenne des scores des quizzes dont le subject_id correspond au cours
-        quizzes = Quiz.query.filter_by(subject_id=course.subject_id).all()
-        quiz_ids = [q.id for q in quizzes]
-        if quiz_ids:
-            results = QuizResult.query.filter(QuizResult.user_id == user_id, QuizResult.quiz_id.in_(quiz_ids)).all()
-            user_score = round(sum(r.score for r in results) / len(results)) if results else 0
-        else:
-            user_score = 0
-        result.append({
-            "id": course.id,
-            "title": course.title,
-            "description": course.description,
-            "user_score": user_score
-        })
-    return jsonify(result)
+    return jsonify(recommendations), 200
 
 @app.route('/api/student/quests', methods=['GET'])
 @jwt_required()
@@ -269,6 +284,26 @@ def api_claim_quest(progress_id):
     db.session.commit()
     return jsonify({'msg': 'Récompense obtenue', 'gems': user.gems, 'xp': user.total_xp}), 200
 
+# ---------- Quiz ----------
+@app.route('/api/quizzes', methods=['GET'])
+@jwt_required()
+def get_quizzes():
+    quizzes = Quiz.query.all()
+    return jsonify([{"id": q.id, "title": q.title, "difficulty": q.difficulty} for q in quizzes]), 200
+
+@app.route('/api/quiz/<int:quiz_id>/questions', methods=['GET'])
+@jwt_required()
+def get_quiz_questions(quiz_id):
+    questions = Question.query.filter_by(quiz_id=quiz_id).all()
+    return jsonify([{
+        "id": q.id,
+        "text": q.text,
+        "option1": q.option1,
+        "option2": q.option2,
+        "option3": q.option3,
+        "option4": q.option4,
+    } for q in questions]), 200
+
 @app.route('/api/quiz/<int:quiz_id>/submit', methods=['POST'])
 @jwt_required()
 def api_submit_quiz(quiz_id):
@@ -278,14 +313,115 @@ def api_submit_quiz(quiz_id):
     result = evaluate_quiz(user_id, quiz_id, answers)
     return jsonify(result), 200
 
-# --------------------- Routes enseignant ---------------------
+# ---------- Administration (API) ----------
+@app.route('/api/admin/users', methods=['GET'])
+@jwt_role_required('admin')
+def admin_users():
+    users = User.query.all()
+    return jsonify([{
+        'id': u.id,
+        'massar': u.massar,
+        'username': u.username,
+        'email': u.email,
+        'role': u.role
+    } for u in users]), 200
+
+@app.route('/api/admin/stats/users', methods=['GET'])
+@jwt_role_required('admin')
+def admin_stats_users():
+    return jsonify({
+        'total': User.query.count(),
+        'students': User.query.filter_by(role='student').count(),
+        'teachers': User.query.filter_by(role='teacher').count(),
+        'admins': User.query.filter_by(role='admin').count()
+    }), 200
+
+@app.route('/api/admin/stats/subjects', methods=['GET'])
+@jwt_role_required('admin')
+def admin_stats_subjects():
+    return jsonify({'count': Subject.query.count()}), 200
+
+@app.route('/api/admin/stats/content', methods=['GET'])
+@jwt_role_required('admin')
+def admin_stats_content():
+    courses = Course.query.count()
+    exercises = Exercise.query.count()
+    quizzes = Quiz.query.count()
+    return jsonify({
+        'total': courses + exercises + quizzes,
+        'courses': courses,
+        'exercises': exercises,
+        'quizzes': quizzes
+    }), 200
+
+@app.route('/api/admin/pending_users', methods=['GET'])
+@jwt_role_required('admin')
+def admin_pending_users():
+    pendings = PendingUser.query.filter_by(status='pending').all()
+    return jsonify([{
+        'id': p.id,
+        'massar': p.massar,
+        'username': p.username,
+        'email': p.email,
+        'role': p.role,
+        'created_at': p.created_at.isoformat()
+    } for p in pendings]), 200
+
+@app.route('/api/admin/approve_user/<int:pending_id>', methods=['POST'])
+@jwt_role_required('admin')
+def admin_approve_user(pending_id):
+    pending = PendingUser.query.get_or_404(pending_id)
+    if pending.status != 'pending':
+        return jsonify({'msg': 'Utilisateur déjà traité'}), 400
+
+    new_user = User(
+        massar=pending.massar,
+        username=pending.username,
+        email=pending.email,
+        role=pending.role
+    )
+    new_user.password_hash = pending.password_hash
+    db.session.add(new_user)
+    db.session.flush()
+
+    pending.status = 'approved'
+    pending.user_id = new_user.id
+    db.session.commit()
+
+    try:
+        msg = Message("Votre compte Albatros a été approuvé", recipients=[pending.email])
+        msg.body = f"Bonjour {pending.username},\n\nVotre inscription a été validée par l'administrateur. Vous pouvez maintenant vous connecter avec votre Massar ({pending.massar}) et le mot de passe que vous avez choisi.\n\nCordialement,\nL'équipe Albatros"
+        mail.send(msg)
+    except Exception as e:
+        print(f"Erreur d'envoi d'email: {e}")
+
+    return jsonify({'msg': 'Utilisateur approuvé et email envoyé'}), 200
+
+@app.route('/api/admin/reject_user/<int:pending_id>', methods=['POST'])
+@jwt_role_required('admin')
+def admin_reject_user(pending_id):
+    pending = PendingUser.query.get_or_404(pending_id)
+    if pending.status != 'pending':
+        return jsonify({'msg': 'Utilisateur déjà traité'}), 400
+
+    pending.status = 'rejected'
+    db.session.commit()
+
+    try:
+        msg = Message("Votre inscription sur Albatros n'a pas été retenue", recipients=[pending.email])
+        msg.body = f"Bonjour {pending.username},\n\nDésolé, votre inscription n'a pas été validée par l'administrateur. Contactez-nous pour plus d'informations.\n\nCordialement,\nL'équipe Albatros"
+        mail.send(msg)
+    except Exception as e:
+        print(f"Erreur d'envoi d'email: {e}")
+
+    return jsonify({'msg': 'Inscription rejetée et email envoyé'}), 200
+
+# ---------- Enseignant (API) ----------
 @app.route('/api/teacher/stats', methods=['GET'])
-@jwt_required()
+@jwt_role_required('teacher', 'admin')
 def teacher_stats():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
-    if user.role not in ['teacher', 'admin']:
-        return jsonify({'msg': 'Unauthorized'}), 403
     courses_count = Course.query.filter_by(teacher_id=user_id).count()
     exercises_count = Exercise.query.join(Course).filter(Course.teacher_id == user_id).count()
     students_count = User.query.filter_by(role='student').count()
@@ -293,15 +429,12 @@ def teacher_stats():
         'courses': courses_count,
         'exercises': exercises_count,
         'students': students_count
-    })
+    }), 200
 
 @app.route('/api/teacher/courses', methods=['GET'])
-@jwt_required()
+@jwt_role_required('teacher', 'admin')
 def get_teacher_courses():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-    if user.role not in ['teacher', 'admin']:
-        return jsonify({'msg': 'Unauthorized'}), 403
     courses = Course.query.filter_by(teacher_id=user_id).all()
     return jsonify([{
         "id": c.id,
@@ -309,10 +442,10 @@ def get_teacher_courses():
         "description": c.description,
         "subject_id": c.subject_id,
         "difficulty": c.difficulty
-    } for c in courses])
+    } for c in courses]), 200
 
 @app.route('/api/teacher/courses/<int:course_id>', methods=['DELETE'])
-@jwt_required()
+@jwt_role_required('teacher', 'admin')
 def delete_course(course_id):
     user_id = get_jwt_identity()
     course = Course.query.get_or_404(course_id)
@@ -323,12 +456,9 @@ def delete_course(course_id):
     return jsonify({'msg': 'Course deleted'}), 200
 
 @app.route('/api/teacher/exercises', methods=['GET'])
-@jwt_required()
+@jwt_role_required('teacher', 'admin')
 def get_teacher_exercises():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-    if user.role not in ['teacher', 'admin']:
-        return jsonify({'msg': 'Unauthorized'}), 403
     exercises = Exercise.query.join(Course).filter(Course.teacher_id == user_id).all()
     return jsonify([{
         "id": e.id,
@@ -336,10 +466,10 @@ def get_teacher_exercises():
         "question_text": e.question_text,
         "difficulty": e.difficulty,
         "tags": e.tags
-    } for e in exercises])
+    } for e in exercises]), 200
 
 @app.route('/api/teacher/exercises', methods=['POST'])
-@jwt_required()
+@jwt_role_required('teacher', 'admin')
 def create_exercise():
     user_id = get_jwt_identity()
     data = request.get_json()
@@ -359,9 +489,9 @@ def create_exercise():
     return jsonify({'msg': 'Exercise created', 'id': exercise.id}), 201
 
 @app.route('/api/teacher/progress', methods=['GET'])
-@jwt_required()
+@jwt_role_required('teacher', 'admin')
 def teacher_progress():
-    # Exemple statique – à remplacer par une vraie logique de progression
+    # Exemple statique – à remplacer par une vraie logique
     data = [
         {"day": "Mon", "score": 55},
         {"day": "Tue", "score": 62},
@@ -370,12 +500,11 @@ def teacher_progress():
         {"day": "Fri", "score": 78},
         {"day": "Sat", "score": 84},
     ]
-    return jsonify(data)
+    return jsonify(data), 200
 
 @app.route('/api/teacher/students', methods=['GET'])
-@jwt_required()
+@jwt_role_required('teacher', 'admin')
 def teacher_students():
-    user_id = get_jwt_identity()
     students = User.query.filter_by(role='student').all()
     result = []
     for student in students:
@@ -387,46 +516,16 @@ def teacher_students():
             'email': student.email,
             'progress': progress
         })
-    return jsonify(result)
+    return jsonify(result), 200
 
-@app.route('/api/teacher/upload_course', methods=['POST'])
-@jwt_required()
-def api_teacher_upload_course():
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-    if user.role not in ['teacher', 'admin']:
-        return jsonify({'msg': 'Accès réservé aux professeurs'}), 403
+# (Optionnel : upload de cours – à décommenter si besoin)
+# @app.route('/api/teacher/upload_course', methods=['POST'])
+# @jwt_role_required('teacher', 'admin')
+# def api_teacher_upload_course():
+#     # À implémenter avec content_manager
+#     pass
 
-    if 'file' not in request.files:
-        return jsonify({'msg': 'Aucun fichier'}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'msg': 'Nom de fichier vide'}), 400
-
-    subject_id = request.form.get('subject_id', type=int, default=1)
-    difficulty = request.form.get('difficulty', 'medium')
-    quiz_title = request.form.get('title', f"Quiz généré depuis {file.filename}")
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as tmp:
-        file.save(tmp.name)
-        tmp_path = tmp.name
-
-    try:
-        quiz_id = charger_document_et_creer_quiz(
-            chemin_fichier=tmp_path,
-            titre_quiz=quiz_title,
-            subject_id=subject_id,
-            difficulte=difficulty,
-            teacher_id=user.id
-        )
-        os.unlink(tmp_path)
-        return jsonify({'quiz_id': quiz_id, 'message': 'Quiz créé avec succès'}), 201
-    except Exception as e:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-        return jsonify({'msg': str(e)}), 500
-
-# --------------------- Routes Amis / Leaderboard ---------------------
+# ---------- Amis et Classement ----------
 @app.route('/api/friends/add', methods=['POST'])
 @jwt_required()
 def api_add_friend():
@@ -472,7 +571,7 @@ def api_leaderboard():
     users = User.query.filter(User.id.in_(friend_ids)).order_by(User.total_xp.desc()).all()
     return jsonify([u.to_dict() for u in users]), 200
 
-# --------------------- Routes dashboards HTML ---------------------
+# ================================ ROUTES DASHBOARDS HTML ================================
 @app.route('/student/dashboard')
 @login_required
 def student_dashboard():
@@ -546,6 +645,15 @@ def buy_flame_freeze():
         flash('Pas assez de gems.')
     return redirect(url_for('student_dashboard'))
 
-# --------------------- Lancement ---------------------
+# ----------------------------- LANCEMENT -----------------------------
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        init_default_quests()
+        if User.query.filter_by(role='admin').count() == 0:
+            admin = User(massar=999999, username='admin', email='admin@example.com', role='admin')
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print("Admin créé: massar=999999, password=admin123")
     app.run(debug=True)

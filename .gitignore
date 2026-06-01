@@ -35,3 +35,6 @@ data/
 *.njsproj
 *.sln
 *.sw?
+# Dossiers spécifiques (selon votre structure)
+albatros-backend/App/__pycache__/
+albatros-backend/App/instance/
