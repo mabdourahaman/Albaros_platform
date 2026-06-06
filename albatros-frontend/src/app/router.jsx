@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import HomePage from "../features/home/HomePage";
 import LoginPage from "../features/auth/LoginPage";
 import RegisterPage from "../features/auth/RegisterPage";
+
 import RoleSelectionPage from "../features/auth/RoleSelectionPage";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
@@ -25,12 +26,18 @@ import AdminDashboard from "../features/admin/pages/AdminDashboard";
 import UserManagementPage from "../features/admin/pages/UserManagementPage";
 import SubjectsManagementPage from "../features/admin/pages/SubjectsManagementPage";
 import ContentManagementPage from "../features/admin/pages/ContentManagementPage";
+import StudentLoginPage from "../features/auth/StudentLoginPage";
+import TeacherLoginPage from "../features/auth/TeacherLoginPage";
+import AdminLoginPage from "../features/auth/AdminLoginPage";
 import PendingUsersPage from "../features/admin/pages/PendingUsersPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <HomePage /> },
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
+  { path: "/login/student", element: <StudentLoginPage /> },
+  { path: "/login/teacher", element: <TeacherLoginPage /> },
+  { path: "/login/admin", element: <AdminLoginPage /> },
   { path: "/role-selection", element: <RoleSelectionPage /> },
 
   {
@@ -39,6 +46,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <StudentDashboard /> },
       { path: "courses", element: <CoursesPage /> },
+      { path: "quiz", element: <QuizPage /> },
       { path: "quiz/:id", element: <QuizPage /> },          // ← ici
       { path: "exercises", element: <ExercisesPage /> },
       { path: "recommendations", element: <RecommendationsPage /> },

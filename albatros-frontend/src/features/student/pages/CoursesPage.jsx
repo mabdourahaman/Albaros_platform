@@ -1,79 +1,61 @@
 import { useEffect, useState } from "react";
+import { BookOpen } from "lucide-react";
 import Card from "../../../components/common/Card";
-import api from "../../../services/api";
 import Loader from "../../../components/common/Loader";
-import { useSettings } from "../../../context/SettingsContext";
+import { getCourses } from "../../../services/courseService";
 
 export default function CoursesPage() {
-  const { darkMode } = useSettings();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    async function loadCourses() {
       try {
-        const response = await api.get("/student/courses");
-        setCourses(response.data); // Tous les cours, pas de slice
-      } catch (err) {
-        setError("Impossible de charger les cours.");
-        console.error(err);
+        const data = await getCourses();
+        setCourses(data);
+      } catch (error) {
+        console.error("Error loading courses:", error);
       } finally {
         setLoading(false);
       }
-    };
-    fetchCourses();
+    }
+
+    loadCourses();
   }, []);
 
-  if (loading) return <Loader />;
-  if (error) return <div className={`text-center ${darkMode ? "text-red-400" : "text-red-500"}`}>{error}</div>;
+  if (loading) return <Loader message="Loading courses..." />;
 
   return (
     <div>
-      <h1 className={`text-3xl font-extrabold ${darkMode ? "text-white" : "text-slate-900"}`}>
+      <h1 className="text-3xl font-extrabold text-slate-900">
         Courses
       </h1>
-      <p className={`mt-2 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-        Consult your available courses and continue learning.
+
+      <p className="mt-2 text-slate-500">
+        Choose a course and start learning.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mt-6">
         {courses.map((course) => (
           <Card key={course.id}>
-            <h2 className={`text-xl font-extrabold ${darkMode ? "text-white" : "text-slate-900"}`}>
+            <div className="w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-700 flex items-center justify-center">
+              <BookOpen />
+            </div>
+
+            <h2 className="mt-4 text-xl font-extrabold">
               {course.title}
             </h2>
-            <p className={`mt-2 text-sm ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+
+            <p className="mt-2 text-sm text-slate-500">
               {course.description}
             </p>
-            <div className="mt-5">
-              <div className="flex justify-between text-sm font-semibold">
-                <span className={darkMode ? "text-slate-300" : "text-slate-700"}>Your Score</span>
-                <span className={darkMode ? "text-white" : "text-slate-900"}>
-                  {course.user_score !== undefined ? `${course.user_score}%` : "—"}
-                </span>
-              </div>
-              {course.user_score !== undefined && (
-                <div className="h-3 bg-slate-100 rounded-full mt-2">
-                  <div
-                    className="h-3 bg-blue-600 rounded-full"
-                    style={{ width: `${course.user_score}%` }}
-                  />
-                </div>
-              )}
-            </div>
-            <button className="mt-5 text-blue-600 font-bold hover:text-blue-700 transition">
-              Open course
-            </button>
+
+            <p className="mt-3 text-sm font-bold text-cyan-600">
+              {course.subject} - {course.level}
+            </p>
           </Card>
         ))}
       </div>
-
-      {courses.length === 0 && !loading && (
-        <div className={`text-center mt-10 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
-          No courses available at the moment.
-        </div>
-      )}
     </div>
   );
 }

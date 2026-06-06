@@ -1,4 +1,3 @@
-# app.py
 import os
 from datetime import date, timedelta
 from functools import wraps
@@ -14,10 +13,10 @@ from db import db
 from models import *
 from helpers import *
 from quiz_service import *
+from data.courses_data import courses
 
 load_dotenv()
 
-# ----------------------------- CONFIGURATION -----------------------------
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-me')
@@ -45,7 +44,6 @@ login_manager.login_message = "Veuillez vous connecter."
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ----------------------------- DÉCORATEUR DE RÔLE (HTML) -----------------------------
 def role_required(*allowed_roles):
     def decorator(f):
         @wraps(f)
@@ -58,7 +56,6 @@ def role_required(*allowed_roles):
         return decorated_function
     return decorator
 
-# ----------------------------- DÉCORATEUR DE RÔLE JWT (API) -----------------------------
 def jwt_role_required(*allowed_roles):
     def decorator(f):
         @wraps(f)
@@ -72,7 +69,6 @@ def jwt_role_required(*allowed_roles):
         return decorated_function
     return decorator
 
-# ================================ ROUTES HTML ================================
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -128,7 +124,6 @@ def logout():
     flash('Déconnecté.', 'info')
     return redirect(url_for('login'))
 
-# ================================ ROUTES API ================================
 @app.route('/api/auth/register', methods=['POST'])
 def api_register():
     data = request.get_json()
@@ -173,7 +168,20 @@ def api_user_me():
     user = User.query.get(user_id)
     return jsonify(user.to_dict()), 200
 
-# ---------- Élève ----------
+
+@app.route('/api/courses', methods=['GET'])
+def api_get_courses():
+    return jsonify(courses), 200
+
+@app.route('/api/courses/<int:course_id>', methods=['GET'])
+def api_get_course(course_id):
+    course = next((c for c in courses if c["id"] == course_id), None)
+
+    if course is None:
+        return jsonify({'msg': 'Course not found'}), 404
+
+    return jsonify(course), 200
+
 @app.route('/api/student/gaps', methods=['GET'])
 @jwt_required()
 def api_student_gaps():
@@ -284,7 +292,6 @@ def api_claim_quest(progress_id):
     db.session.commit()
     return jsonify({'msg': 'Récompense obtenue', 'gems': user.gems, 'xp': user.total_xp}), 200
 
-# ---------- Quiz ----------
 @app.route('/api/quizzes', methods=['GET'])
 @jwt_required()
 def get_quizzes():
@@ -313,7 +320,6 @@ def api_submit_quiz(quiz_id):
     result = evaluate_quiz(user_id, quiz_id, answers)
     return jsonify(result), 200
 
-# ---------- Administration (API) ----------
 @app.route('/api/admin/users', methods=['GET'])
 @jwt_role_required('admin')
 def admin_users():
@@ -416,7 +422,6 @@ def admin_reject_user(pending_id):
 
     return jsonify({'msg': 'Inscription rejetée et email envoyé'}), 200
 
-# ---------- Enseignant (API) ----------
 @app.route('/api/teacher/stats', methods=['GET'])
 @jwt_role_required('teacher', 'admin')
 def teacher_stats():
@@ -491,7 +496,6 @@ def create_exercise():
 @app.route('/api/teacher/progress', methods=['GET'])
 @jwt_role_required('teacher', 'admin')
 def teacher_progress():
-    # Exemple statique – à remplacer par une vraie logique
     data = [
         {"day": "Mon", "score": 55},
         {"day": "Tue", "score": 62},
@@ -518,14 +522,7 @@ def teacher_students():
         })
     return jsonify(result), 200
 
-# (Optionnel : upload de cours – à décommenter si besoin)
-# @app.route('/api/teacher/upload_course', methods=['POST'])
-# @jwt_role_required('teacher', 'admin')
-# def api_teacher_upload_course():
-#     # À implémenter avec content_manager
-#     pass
 
-# ---------- Amis et Classement ----------
 @app.route('/api/friends/add', methods=['POST'])
 @jwt_required()
 def api_add_friend():
@@ -571,7 +568,6 @@ def api_leaderboard():
     users = User.query.filter(User.id.in_(friend_ids)).order_by(User.total_xp.desc()).all()
     return jsonify([u.to_dict() for u in users]), 200
 
-# ================================ ROUTES DASHBOARDS HTML ================================
 @app.route('/student/dashboard')
 @login_required
 def student_dashboard():
@@ -645,7 +641,6 @@ def buy_flame_freeze():
         flash('Pas assez de gems.')
     return redirect(url_for('student_dashboard'))
 
-# ----------------------------- LANCEMENT -----------------------------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
