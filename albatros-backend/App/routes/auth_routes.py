@@ -48,8 +48,12 @@ def api_register():
     if account_type == 'student':
         if not massar:
             return jsonify({'msg': 'Le code Massar est obligatoire pour les élèves'}), 400
+        # Le niveau scolaire n'est plus obligatoire
+        # if not level:
+        #     return jsonify({'msg': 'Le niveau scolaire est obligatoire pour les élèves'}), 400
+        # On peut fixer level à None s'il n'est pas fourni
         if not level:
-            return jsonify({'msg': 'Le niveau scolaire est obligatoire pour les élèves'}), 400
+            level = None
 
     if account_type == 'teacher' and not subject:
         return jsonify({'msg': 'La matière est obligatoire pour les enseignants'}), 400
