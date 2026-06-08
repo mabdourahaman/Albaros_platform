@@ -172,6 +172,7 @@ export default function HomePage() {
   const dropdownItem = darkMode
     ? "text-slate-100 hover:bg-slate-800"
     : "text-slate-800 hover:bg-slate-100";
+  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
   return (
     <main
@@ -185,20 +186,18 @@ export default function HomePage() {
           darkMode ? "bg-slate-950" : "bg-white"
         }`}
       >
-        <nav className="h-20 flex items-center justify-between">
-          <div className="h-full px-4 md:px-10 flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-lg bg-cyan-500 text-white flex items-center justify-center">
-                <GraduationCap size={28} />
-              </div>
+        <nav className="h-20 flex items-center justify-between px-4 md:px-6">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-lg bg-cyan-500 text-white flex items-center justify-center">
+              <GraduationCap size={28} />
+            </div>
+            <span className="text-2xl md:text-3xl font-extrabold tracking-wide text-cyan-500">
+              ALBATROS
+            </span>
+          </Link>
 
-              <span className="text-2xl md:text-3xl font-extrabold tracking-wide text-cyan-500">
-                ALBATROS
-              </span>
-            </Link>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-10 font-bold uppercase text-sm tracking-wide">
+          {/* Navigation desktop : liens + boutons */}
+          <div className="hidden lg:flex items-center gap-8 font-bold uppercase text-sm tracking-wide">
             <a href="#home" className="text-cyan-500">
               {t.home}
             </a>
@@ -223,39 +222,37 @@ export default function HomePage() {
             >
               {t.contact}
             </a>
-          </div>
 
-          <div className="flex items-center h-full gap-2 pr-4 md:pr-6 relative">
-            <SettingsControls />
-
+            {/* Boutons Login/Register dans la barre desktop */}
             <Link
               to="/login"
-              className="hidden md:flex items-center justify-center min-w-[115px] px-6 py-3 rounded-xl bg-cyan-500 text-white font-extrabold hover:bg-cyan-600 transition shadow-sm"
+              className={`px-4 py-2 rounded-xl font-bold transition ${
+                darkMode
+                  ? "bg-slate-800 text-white hover:bg-slate-700"
+                  : "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50"
+              }`}
             >
               {t.login}
             </Link>
-
             <Link
               to="/register"
-              className={`hidden md:flex items-center justify-center min-w-[115px] px-6 py-3 rounded-xl font-extrabold transition shadow-sm border ${
-                darkMode
-                  ? "bg-slate-900 text-white border-slate-700 hover:bg-slate-800"
-                  : "bg-white text-slate-900 border-slate-200 hover:bg-slate-100"
-              }`}
+              className="px-4 py-2 rounded-xl bg-cyan-500 text-white font-bold hover:bg-cyan-600 transition"
             >
               {t.register}
+              <ArrowRight size={16} className="ml-1 inline" />
             </Link>
+          </div>
+
+          {/* Zone droite pour mobile : seulement l'icône menu et le sélecteur de langue (optionnel) */}
+          <div className="flex items-center gap-2">
+            <SettingsControls />
 
             <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`md:hidden w-12 h-12 rounded-xl flex items-center justify-center transition ${
-                darkMode
-                  ? "bg-slate-900 text-white border border-slate-700 hover:bg-slate-800"
-                  : "bg-white text-slate-900 border border-slate-200 hover:bg-slate-100"
-              }`}
+              onClick={toggleMobileMenu}
+              className="lg:hidden p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+              aria-label="Menu"
             >
-              {mobileMenuOpen ? <X size={26} /> : <Menu size={28} />}
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
             {mobileMenuOpen && (
@@ -290,46 +287,90 @@ export default function HomePage() {
           </div>
         </nav>
 
-        <div className="md:hidden px-4 pb-4">
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className={`w-full px-4 py-3 rounded-xl border outline-none ${
-              darkMode
-                ? "bg-slate-900 border-slate-700 text-white"
-                : "bg-white border-slate-200 text-slate-700"
-            }`}
-          >
-            <option
-              value="en"
-              className={
-                darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"
-              }
+        {/* Menu mobile (tiroir) - contient liens + boutons */}
+        {mobileMenuOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={toggleMobileMenu}
+            />
+            <div
+              className={`fixed top-20 left-0 right-0 z-50 shadow-lg p-5 flex flex-col gap-4 lg:hidden ${
+                darkMode ? "bg-slate-900" : "bg-white"
+              }`}
             >
-              English
-            </option>
+              <a
+                href="#home"
+                onClick={toggleMobileMenu}
+                className="text-cyan-500 font-bold py-2 text-lg"
+              >
+                {t.home}
+              </a>
+              <a
+                href="#about"
+                onClick={toggleMobileMenu}
+                className={`py-2 text-lg ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+              >
+                {t.about}
+              </a>
+              <a
+                href="#courses"
+                onClick={toggleMobileMenu}
+                className={`py-2 text-lg ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+              >
+                {t.courses}
+              </a>
+              <a
+                href="#contact"
+                onClick={toggleMobileMenu}
+                className={`py-2 text-lg ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+              >
+                {t.contact}
+              </a>
 
-            <option
-              value="fr"
-              className={
-                darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"
-              }
-            >
-              Français
-            </option>
+              <div className="h-px bg-slate-200 dark:bg-slate-700 my-2" />
 
-            <option
-              value="ar"
-              className={
-                darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"
-              }
-            >
-              العربية
-            </option>
-          </select>
-        </div>
+              <Link
+                to="/login"
+                onClick={toggleMobileMenu}
+                className={`block text-center px-4 py-3 rounded-xl font-bold transition ${
+                  darkMode
+                    ? "bg-slate-800 text-white hover:bg-slate-700"
+                    : "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                {t.login}
+              </Link>
+              <Link
+                to="/register"
+                onClick={toggleMobileMenu}
+                className="block text-center px-4 py-3 rounded-xl bg-cyan-500 text-white font-bold hover:bg-cyan-600 transition"
+              >
+                {t.register}
+                <ArrowRight size={16} className="ml-1 inline" />
+              </Link>
+
+              <div className="pt-2">
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border outline-none ${
+                    darkMode
+                      ? "bg-slate-800 border-slate-700 text-white"
+                      : "bg-white border-slate-200 text-slate-700"
+                  }`}
+                >
+                  <option value="en">English</option>
+                  <option value="fr">Français</option>
+                  <option value="ar">العربية</option>
+                </select>
+              </div>
+            </div>
+          </>
+        )}
       </header>
 
+      {/* Section hero et about - inchangées */}
       <section
         id="home"
         className="relative min-h-screen flex items-center pt-20 overflow-hidden"

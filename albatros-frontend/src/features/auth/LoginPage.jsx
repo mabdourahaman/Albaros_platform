@@ -480,21 +480,30 @@ export default function LoginPage() {
               <div>
                 <label className={labelClass}>{t.resetEmail}</label>
 
-                <input
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  type="email"
-                  placeholder="name@email.com"
-                  className={inputClass}
-                  required
-                />
-              </div>
+        <form onSubmit={handleLogin} className="mt-6 space-y-4">
+          <input
+            name="massar"
+            type="text"
+            placeholder={t.massar}
+            className={`w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500 ${
+              darkMode
+                ? "bg-slate-950 border-slate-700 text-white"
+                : "bg-white border-slate-300 text-slate-900"
+            }`}
+            required
+          />
 
-              {error && (
-                <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600 font-bold text-center">
-                  {error}
-                </div>
-              )}
+          <input
+            name="password"
+            type="password"
+            placeholder={t.password}
+            className={`w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500 ${
+              darkMode
+                ? "bg-slate-950 border-slate-700 text-white"
+                : "bg-white border-slate-300 text-slate-900"
+            }`}
+            required
+          />
 
               <button
                 type="submit"

@@ -458,142 +458,75 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <div>
-            <label className={labelClass}>{t.accountType}</label>
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <input
+            name="massar"
+            type="text"
+            placeholder={t.massar}
+            value={form.massar}
+            onChange={handleChange}
+            className={`w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500 ${
+              darkMode
+                ? "bg-slate-950 border-slate-700 text-white"
+                : "bg-white border-slate-300 text-slate-900"
+            }`}
+            required
+          />
 
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleAccountType("student")}
-                className={`rounded-2xl border px-4 py-3 font-extrabold transition ${
-                  form.accountType === "student"
-                    ? "bg-cyan-500 text-white border-cyan-500"
-                    : darkMode
-                    ? "bg-slate-950 text-slate-200 border-slate-700"
-                    : "bg-white text-slate-700 border-slate-300"
-                }`}
-              >
-                {t.student}
-              </button>
+          <input
+            name="username"
+            placeholder={t.fullName}
+            value={form.username}
+            onChange={handleChange}
+            className={`w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500 ${
+              darkMode
+                ? "bg-slate-950 border-slate-700 text-white"
+                : "bg-white border-slate-300 text-slate-900"
+            }`}
+            required
+          />
 
-              <button
-                type="button"
-                onClick={() => handleAccountType("teacher")}
-                className={`rounded-2xl border px-4 py-3 font-extrabold transition ${
-                  form.accountType === "teacher"
-                    ? "bg-cyan-500 text-white border-cyan-500"
-                    : darkMode
-                    ? "bg-slate-950 text-slate-200 border-slate-700"
-                    : "bg-white text-slate-700 border-slate-300"
-                }`}
-              >
-                {t.teacher}
-              </button>
-            </div>
-          </div>
+          <input
+            name="email"
+            type="email"
+            placeholder={t.email}
+            value={form.email}
+            onChange={handleChange}
+            className={`w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500 ${
+              darkMode
+                ? "bg-slate-950 border-slate-700 text-white"
+                : "bg-white border-slate-300 text-slate-900"
+            }`}
+            required
+          />
 
-          <div>
-            <label className={labelClass}>{t.fullName}</label>
-            <input
-              name="username"
-              value={form.username}
-              onChange={handleChange}
-              className={inputClass}
-              required
-            />
-          </div>
+          <input
+            name="password"
+            type="password"
+            placeholder={t.password}
+            value={form.password}
+            onChange={handleChange}
+            className={`w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500 ${
+              darkMode
+                ? "bg-slate-950 border-slate-700 text-white"
+                : "bg-white border-slate-300 text-slate-900"
+            }`}
+            required
+          />
 
-          {form.accountType === "student" && (
-            <>
-              <div>
-                <label className={labelClass}>{t.massar}</label>
-                <input
-                  name="massar"
-                  value={form.massar}
-                  onChange={handleChange}
-                  placeholder="A12345678"
-                  className={inputClass}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>{t.level}</label>
-                <select
-                  name="level"
-                  value={form.level}
-                  onChange={handleChange}
-                  className={inputClass}
-                  required
-                >
-                  <option value="">{t.chooseLevel}</option>
-                  <option value="5ème primaire">{t.level5}</option>
-                  <option value="6ème primaire">{t.level6}</option>
-                </select>
-              </div>
-            </>
-          )}
-
-          {form.accountType === "teacher" && (
-            <div>
-              <label className={labelClass}>{t.subject}</label>
-              <select
-                name="subject"
-                value={form.subject}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
-                <option value="">Select subject</option>
-                <option value="Mathematics">Mathematics</option>
-                <option value="French">French</option>
-                <option value="English">English</option>
-                <option value="Informatics">Informatics</option>
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className={labelClass}>{t.email}</label>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder={
-                form.accountType === "teacher"
-                  ? "teacher@albatros.ma"
-                  : "student@email.com"
-              }
-              className={inputClass}
-              required
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>{t.password}</label>
-            <input
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-              className={inputClass}
-              required
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>{t.confirmPassword}</label>
-            <input
-              name="confirmPassword"
-              type="password"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              className={inputClass}
-              required
-            />
-          </div>
+          <input
+            name="confirmPassword"
+            type="password"
+            placeholder={t.confirmPassword}
+            value={form.confirmPassword}
+            onChange={handleChange}
+            className={`w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500 ${
+              darkMode
+                ? "bg-slate-950 border-slate-700 text-white"
+                : "bg-white border-slate-300 text-slate-900"
+            }`}
+            required
+          />
 
           {error && (
             <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600 font-bold text-center">

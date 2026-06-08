@@ -1,24 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, Menu, LogOut, Settings } from "lucide-react";
 import SettingsControls from "../common/SettingsControls";
+import ChangePasswordModal from "../common/ChangePasswordModal";
 import { useSettings } from "../../context/SettingsContext";
 import { logoutUser } from "../../services/authService";
+import api from "../../services/api";
 
 export default function Navbar({ role, onMenuClick }) {
   const { darkMode, t } = useSettings();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [userInitial, setUserInitial] = useState("A");
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await api.get("/user/me");
+        if (res.data?.username) {
+          setUserInitial(res.data.username.charAt(0).toUpperCase());
+        }
+      } catch (err) {
+        console.error("Could not fetch user");
+      }
+    };
+    fetchUser();
+  }, []);
 
-  const title = {
-    student: t.studentDashboard || "Student Dashboard",
-    teacher: t.teacherDashboard || "Teacher Dashboard",
-    admin: t.adminDashboard || "Admin Dashboard",
-  };
-
-  function handleLogout() {
+  const handleLogout = () => {
     logoutUser();
     navigate("/");
   }
@@ -31,49 +41,24 @@ export default function Navbar({ role, onMenuClick }) {
   const avatarLetter = user.username ? user.username.charAt(0).toUpperCase() : "A";
 
   return (
-    <header
-      className={`h-20 border-b flex items-center justify-between px-4 md:px-8 ${
-        darkMode
-          ? "bg-slate-950 border-slate-800 text-white"
-          : "bg-white border-slate-100 text-slate-900"
-      }`}
-    >
+    <header className={`h-20 border-b flex items-center justify-between px-4 md:px-8 ${darkMode ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-100 text-slate-900"}`}>
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onMenuClick}
-          className={`lg:hidden w-10 h-10 rounded-xl flex items-center justify-center transition ${
-            darkMode
-              ? "bg-slate-900 hover:bg-slate-800"
-              : "bg-slate-100 hover:bg-slate-200"
-          }`}
-        >
+        <button onClick={onMenuClick} className={`lg:hidden w-10 h-10 rounded-xl flex items-center justify-center ${darkMode ? "bg-slate-900" : "bg-slate-100"}`}>
           <Menu size={22} />
         </button>
 
         <div>
-          <h2 className="text-lg font-bold capitalize">{title[role]}</h2>
-          <p
-            className={`text-sm ${
-              darkMode ? "text-slate-400" : "text-slate-500"
-            }`}
-          >
-            Albatros
-          </p>
+          <h2 className="text-lg font-bold capitalize">
+            {role === "student" ? "Student Dashboard" : role === "teacher" ? "Teacher Dashboard" : "Admin Dashboard"}
+          </h2>
+          <p className={darkMode ? "text-sm text-slate-400" : "text-sm text-slate-500"}>Albatros</p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
         <SettingsControls />
 
-        <button
-          type="button"
-          className={`hidden sm:flex w-10 h-10 rounded-full items-center justify-center transition ${
-            darkMode
-              ? "bg-slate-900 hover:bg-slate-800"
-              : "bg-slate-100 hover:bg-slate-200"
-          }`}
-        >
+        <button className={`hidden sm:flex w-10 h-10 rounded-full items-center justify-center ${darkMode ? "bg-slate-900" : "bg-slate-100"}`}>
           <Bell size={20} />
         </button>
 
@@ -83,63 +68,28 @@ export default function Navbar({ role, onMenuClick }) {
             onClick={() => setShowDropdown(!showDropdown)}
             className="w-10 h-10 rounded-full bg-cyan-500 text-white flex items-center justify-center font-bold hover:bg-cyan-600 transition"
           >
-            {avatarLetter}
+            {userInitial}
           </button>
 
           {showDropdown && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowDropdown(false)}
-              />
-
-              <div
-                className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg border z-20 overflow-hidden ${
-                  darkMode
-                    ? "bg-slate-900 border-slate-700"
-                    : "bg-white border-slate-200"
-                }`}
-              >
-                <div
-                  className={`px-4 py-3 border-b ${
-                    darkMode ? "border-slate-700" : "border-slate-100"
-                  }`}
-                >
-                  <p className="font-bold text-sm">
-                    {user.username || "Albatros User"}
-                  </p>
-                  <p
-                    className={`text-xs capitalize ${
-                      darkMode ? "text-slate-400" : "text-slate-500"
-                    }`}
-                  >
-                    {user.role || role}
-                  </p>
-                </div>
-
+              <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
+              <div className={`absolute right-0 mt-2 w-48 rounded-xl shadow-lg border z-20 ${darkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"}`}>
                 <button
-                  type="button"
-                  onClick={handleSettings}
-                  className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm font-bold transition ${
-                    darkMode
-                      ? "hover:bg-slate-800 text-slate-200"
-                      : "hover:bg-slate-100 text-slate-700"
-                  }`}
+                  onClick={() => {
+                    setShowDropdown(false);
+                    setShowPasswordModal(true);
+                  }}
+                  className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm font-bold rounded-xl transition ${darkMode ? "hover:bg-slate-800 text-slate-200" : "hover:bg-slate-100 text-slate-700"}`}
                 >
-                  <Settings size={18} />
-                  <span>{t.settings || "Settings"}</span>
+                  <Settings size={16} />
+                  <span>Change Password</span>
                 </button>
-
                 <button
-                  type="button"
                   onClick={handleLogout}
-                  className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm font-bold transition border-t ${
-                    darkMode
-                      ? "hover:bg-slate-800 text-slate-200 border-slate-700"
-                      : "hover:bg-slate-100 text-slate-700 border-slate-100"
-                  }`}
+                  className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm font-bold rounded-xl transition ${darkMode ? "hover:bg-slate-800 text-slate-200" : "hover:bg-slate-100 text-slate-700"}`}
                 >
-                  <LogOut size={18} />
+                  <LogOut size={16} />
                   <span>{t.logout || "Logout"}</span>
                 </button>
               </div>
@@ -147,6 +97,8 @@ export default function Navbar({ role, onMenuClick }) {
           )}
         </div>
       </div>
+
+      <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
     </header>
   );
 }

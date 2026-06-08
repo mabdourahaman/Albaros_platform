@@ -8,7 +8,7 @@ import {
   FilePlus,
   GraduationCap,
   Clock,
-  Settings,
+  FileText
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 
@@ -17,30 +17,31 @@ export default function Sidebar({ role, onLinkClick }) {
 
   const links = {
     student: [
-      { label: t.dashboard || "Dashboard", to: "/student", icon: LayoutDashboard },
-      { label: t.courses || "Courses", to: "/student/courses", icon: BookOpen },
-      { label: t.quiz || "Quiz", to: "/student/quiz", icon: ClipboardList },
-      { label: t.exercises || "Exercises", to: "/student/exercises", icon: FilePlus },
-      { label: t.recommendations || "Recommendations", to: "/student/recommendations", icon: GraduationCap },
-      { label: t.progress || "Progress", to: "/student/progress", icon: BarChart3 },
-      { label: t.scores || "Scores", to: "/student/scores", icon: BarChart3 },
+      { label: t.dashboard, to: "/student", icon: LayoutDashboard },
+      { label: t.courses, to: "/student/courses", icon: BookOpen },
+      { label: t.quiz, to: "/student/quizzes", icon: ClipboardList },
+      { label: t.exercises, to: "/student/exercises", icon: FilePlus },
+      { label: t.recommendations, to: "/student/recommendations", icon: GraduationCap },
+      { label: t.progress, to: "/student/progress", icon: BarChart3 },
+      { label: t.scores, to: "/student/scores", icon: BarChart3 },
     ],
 
     teacher: [
-      { label: t.dashboard || "Dashboard", to: "/teacher", icon: LayoutDashboard },
-      { label: t.courses || "Courses", to: "/teacher/courses", icon: BookOpen },
-      { label: t.addCourse || "Add Course", to: "/teacher/courses/add", icon: FilePlus },
-      { label: t.addExercise || "Add Exercise", to: "/teacher/exercises/add", icon: ClipboardList },
-      { label: t.students || "Students", to: "/teacher/students", icon: Users },
-      { label: t.monitoring || "Monitoring", to: "/teacher/monitoring", icon: BarChart3 },
+      { label: t.dashboard, to: "/teacher", icon: LayoutDashboard },
+      { label: t.courses, to: "/teacher/courses", icon: BookOpen },
+      { label: "Exercices", to: "/teacher/exercises", icon: ClipboardList },
+      { label: "Quiz", to: "/teacher/quizzes", icon: GraduationCap },
+      { label: t.students, to: "/teacher/students", icon: Users },
+      { label: t.monitoring, to: "/teacher/monitoring", icon: BarChart3 },
+
     ],
 
     admin: [
-      { label: t.dashboard || "Dashboard", to: "/admin", icon: LayoutDashboard },
-      { label: t.users || "Users", to: "/admin/users", icon: Users },
-      { label: t.pendingUsers || "Pending Users", to: "/admin/pending-users", icon: Clock },
-      { label: t.subjects || "Subjects", to: "/admin/subjects", icon: BookOpen },
-      { label: t.content || "Content", to: "/admin/content", icon: FilePlus },
+      { label: t.dashboard, to: "/admin", icon: LayoutDashboard },
+      { label: t.users, to: "/admin/users", icon: Users },
+      { label: t.pendingUsers, to: "/admin/pending-users", icon: Clock },
+      { label: t.subjects, to: "/admin/subjects", icon: BookOpen },
+      { label: t.content, to: "/admin/content", icon: FileText },
     ],
   };
 

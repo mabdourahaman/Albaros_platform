@@ -1,299 +1,259 @@
-# seed_data.py
-import os
-import sys
-from datetime import date, timedelta, datetime
-
-# Se placer dans le même dossier que seed_data.py pour les imports
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
+# initdb.py - Version enrichie avec cours, exercices et quiz par matière
 from app import app, db
-from models import *
+from models import User, Subject, Course, Exercise, Quiz, Question, Gap
+from quiz_service import get_or_create_gaps_course
 
-def init_database():
-    """Crée les tables et les données initiales (à exécuter une seule fois)."""
-    with app.app_context():
-        # 1. Créer toutes les tables
-        db.create_all()
-        print("✅ Tables créées.")
+def create_user(massar, username, email, password, role):
+    existing = User.query.filter((User.massar == massar) | (User.email == email)).first()
+    if existing:
+        print(f"⚠️ User {username} already exists, skipping.")
+        return existing
+    user = User(
+        massar=massar,
+        username=username,
+        email=email,
+        role=role,
+        flame=0,
+        gems=0,
+        total_xp=0
+    )
+    user.set_password(password)
+    db.session.add(user)
+    db.session.flush()
+    print(f"✅ {role.capitalize()} created: {username} (massar={massar})")
+    return user
 
-        # 2. Vérifier si des données existent déjà (ex: utilisateur admin)
-        if User.query.filter_by(email='admin@example.com').first():
-            print("ℹ️ Les données existent déjà. Aucune insertion.")
-            return
+def create_subject(name, description, teacher):
+    existing = Subject.query.filter_by(name=name).first()
+    if existing:
+        print(f"⚠️ Subject '{name}' already exists, skipping.")
+        return existing
+    subject = Subject(name=name, description=description, teacher_id=teacher.id)
+    db.session.add(subject)
+    db.session.flush()
+    print(f"✅ Subject created: {name} (teacher: {teacher.username})")
+    return subject
 
-        # ========== 3. CRÉATION DES UTILISATEURS ==========
-        admin = User(
-            massar=999999,
-            username="admin",
-            email="admin@example.com",
-            role="admin",
-            flame=0,
-            gems=0,
-            total_xp=0
+def create_course(title, description, subject, teacher, difficulty="medium", tags="", content="", examples=""):
+    # On vérifie si le cours existe déjà (optionnel)
+    existing = Course.query.filter_by(title=title, teacher_id=teacher.id).first()
+    if existing:
+        print(f"⚠️ Course '{title}' already exists, skipping.")
+        return existing
+    course = Course(
+        title=title,
+        description=description,
+        subject_id=subject.id,
+        teacher_id=teacher.id,
+        difficulty=difficulty,
+        tags=tags,
+        content=content,
+        examples=examples
+    )
+    db.session.add(course)
+    db.session.flush()
+    print(f"✅ Course added: {title}")
+    return course
+
+def create_exercise(course, question, correct_answer, explanation, difficulty="easy", tags=""):
+    exercise = Exercise(
+        course_id=course.id,
+        question_text=question,
+        correct_answer=correct_answer,
+        explanation=explanation,
+        difficulty=difficulty,
+        tags=tags
+    )
+    db.session.add(exercise)
+    db.session.flush()
+    return exercise
+
+def create_quiz(title, subject, teacher, difficulty, questions_data):
+    quiz = Quiz(
+        title=title,
+        subject_id=subject.id,
+        difficulty=difficulty,
+        teacher_id=teacher.id
+    )
+    db.session.add(quiz)
+    db.session.flush()
+    for qd in questions_data:
+        question = Question(
+            quiz_id=quiz.id,
+            text=qd['text'],
+            option1=qd['option1'],
+            option2=qd['option2'],
+            option3=qd.get('option3', ''),
+            option4=qd.get('option4', ''),
+            correct_option=qd['correct_option'],
+            concept=qd.get('concept', 'seed')
         )
-        admin.set_password("admin123")
+        db.session.add(question)
+    db.session.flush()
+    print(f"✅ Quiz created: {title}")
+    return quiz
 
-        teacher = User(
-            massar=111111,
-            username="teacher",
-            email="teacher@example.com",
-            role="teacher",
-            flame=0,
-            gems=0,
-            total_xp=0
-        )
-        teacher.set_password("teacher123")
+with app.app_context():
+    # ---------- 1. Création des enseignants ----------
+    teacher_math = create_user(massar=1111, username="teacher_math", email="math@example.com", password="teacher123", role="teacher")
+    teacher_physics = create_user(massar=2222, username="teacher_physics", email="physics@example.com", password="teacher123", role="teacher")
+    teacher_english = create_user(massar=3333, username="teacher_english", email="english@example.com", password="teacher123", role="teacher")
 
-        alice = User(
-            massar=123456,
-            username="alice",
-            email="alice@example.com",
-            role="student",
-            flame=0,
-            gems=10,
-            total_xp=0
-        )
-        alice.set_password("alice123")
+    # ---------- 2. Création des matières ----------
+    math_subj = create_subject("Mathématiques", "Cours de mathématiques", teacher_math)
+    physics_subj = create_subject("Physique", "Cours de physique", teacher_physics)
+    english_subj = create_subject("Anglais", "Cours d'anglais", teacher_english)
 
-        bob = User(
-            massar=654321,
-            username="bob",
-            email="bob@example.com",
-            role="student",
-            flame=0,
-            gems=5,
-            total_xp=0
-        )
-        bob.set_password("bob123")
+    # ---------- 3. Création des cours (un par matière, avec contenu texte) ----------
+    math_course = create_course(
+        title="Algèbre et analyse",
+        description="Introduction aux vecteurs, matrices, dérivées et intégrales",
+        subject=math_subj,
+        teacher=teacher_math,
+        difficulty="medium",
+        tags="algebra, calculus",
+        content="""<h2>Les vecteurs</h2><p>Un vecteur est une flèche...</p>
+        <h2>Dérivées</h2><p>La dérivée de x^n est n*x^(n-1).</p>
+        <h2>Intégrales</h2><p>L'intégrale de x^n est x^(n+1)/(n+1).</p>""",
+        examples="Exemple: (2,3)+(4,5)=(6,8). Dérivée de x^2 = 2x."
+    )
+    physics_course = create_course(
+        title="Mécanique classique",
+        description="Lois de Newton, énergie cinétique et potentielle",
+        subject=physics_subj,
+        teacher=teacher_physics,
+        difficulty="medium",
+        tags="mechanics, newton",
+        content="""<h2>Première loi de Newton</h2><p>Principe d'inertie.</p>
+        <h2>Deuxième loi</h2><p>F = m * a</p>
+        <h2>Énergie cinétique</h2><p>Ec = 1/2 * m * v^2</p>""",
+        examples="Calculez la force pour un objet de 10 kg accélérant à 5 m/s² -> F=50 N."
+    )
+    english_course = create_course(
+        title="English Grammar and Vocabulary",
+        description="Basic tenses, vocabulary, and sentence structure",
+        subject=english_subj,
+        teacher=teacher_english,
+        difficulty="easy",
+        tags="grammar, vocabulary",
+        content="""<h2>Present Simple</h2><p>I go, you go, he goes...</p>
+        <h2>Past Simple</h2><p>She went to school yesterday.</p>
+        <h2>Future Simple</h2><p>I will learn English.</p>""",
+        examples="She (go) to school every day -> goes."
+    )
 
-        db.session.add_all([admin, teacher, alice, bob])
-        db.session.commit()
-        print("✅ Utilisateurs créés : admin, teacher, alice, bob")
+    # ---------- 4. Création de 4 exercices par matière ----------
+    # Exercices Maths
+    create_exercise(math_course,
+        "Calculez la somme des vecteurs (2,3) et (4,5)",
+        "(6,8)",
+        "On additionne composante par composante : 2+4=6, 3+5=8",
+        difficulty="easy", tags="vectors")
+    create_exercise(math_course,
+        "Quelle est la dérivée de f(x)=3x²+2x-1 ?",
+        "f'(x)=6x+2",
+        "Dérivée de x² est 2x, donc 3*2x = 6x; dérivée de 2x = 2; constante -> 0",
+        difficulty="medium", tags="derivation")
+    create_exercise(math_course,
+        "Calculez l'intégrale de 0 à 2 de (x+1) dx",
+        "4",
+        "Primitive: (x²/2 + x) entre 0 et 2 = (2+2) - 0 = 4",
+        difficulty="hard", tags="integrals")
+    create_exercise(math_course,
+        "Résoudre 2x + 5 = 13",
+        "x=4",
+        "2x = 8 => x = 4",
+        difficulty="easy", tags="equations")
 
-        # ========== 4. MATIÈRES ==========
-        subjects = [
-            Subject(name="Mathématiques", description="Cours de mathématiques"),
-            Subject(name="Français", description="Cours de français et grammaire"),
-            Subject(name="Anglais", description="Cours d'anglais")
-        ]
-        db.session.add_all(subjects)
-        db.session.commit()
-        print(f"✅ {len(subjects)} matières créées.")
+    # Exercices Physique
+    create_exercise(physics_course,
+        "Un objet de masse 10 kg est soumis à une force de 50 N. Quelle est son accélération ?",
+        "5 m/s²",
+        "a = F/m = 50/10 = 5 m/s²",
+        difficulty="easy", tags="newton")
+    create_exercise(physics_course,
+        "Calculez l'énergie cinétique d'un véhicule de 1000 kg roulant à 20 m/s",
+        "200 000 J",
+        "Ec = 1/2 * m * v² = 0.5 * 1000 * 400 = 200 000 J",
+        difficulty="medium", tags="energy")
+    create_exercise(physics_course,
+        "La force gravitationnelle entre deux masses est-elle proportionnelle à 1/r ou 1/r² ?",
+        "1/r²",
+        "La loi de Newton dit F = G*m1*m2 / r²",
+        difficulty="easy", tags="gravity")
+    create_exercise(physics_course,
+        "Un pendule simple de longueur 1 m a une période de ? (g≈10 m/s²)",
+        "environ 2 s",
+        "T = 2π√(L/g) ≈ 2*3.14*√(0.1) ≈ 1.98 s",
+        difficulty="hard", tags="oscillations")
 
-        math_id = Subject.query.filter_by(name="Mathématiques").first().id
-        francais_id = Subject.query.filter_by(name="Français").first().id
+    # Exercices Anglais
+    create_exercise(english_course,
+        "What is the past tense of 'to eat'?",
+        "ate",
+        "Irregular verb: eat - ate - eaten",
+        difficulty="easy", tags="verbs")
+    create_exercise(english_course,
+        "Complete the sentence: 'If I were rich, I ____ buy a car.' (use would)",
+        "would",
+        "Second conditional: If + past simple, would + base form",
+        difficulty="medium", tags="conditionals")
+    create_exercise(english_course,
+        "Which word is a synonym for 'happy'?",
+        "joyful",
+        "Synonyms: joyful, delighted, cheerful",
+        difficulty="easy", tags="vocabulary")
+    create_exercise(english_course,
+        "Rewrite the sentence in passive voice: 'The chef cooks the meal.'",
+        "The meal is cooked by the chef.",
+        "Passive: object + be + past participle + by + subject",
+        difficulty="medium", tags="passive")
 
-        # ========== 5. COURS ==========
-        courses = [
-            Course(
-                title="Fractions pour débutants",
-                description="Apprenez les bases des fractions",
-                subject_id=math_id,
-                teacher_id=teacher.id,
-                difficulty="easy",
-                tags="fractions,maths"
-            ),
-            Course(
-                title="Équations simples",
-                description="Résolvez des équations du premier degré",
-                subject_id=math_id,
-                teacher_id=teacher.id,
-                difficulty="easy",
-                tags="equations,algebre"
-            ),
-            Course(
-                title="Conjugaison du présent",
-                description="Maîtrisez les verbes au présent",
-                subject_id=francais_id,
-                teacher_id=teacher.id,
-                difficulty="easy",
-                tags="conjugaison,francais"
-            ),
-            Course(
-                title="Calcul mental avancé",
-                description="Techniques de calcul rapide",
-                subject_id=math_id,
-                teacher_id=teacher.id,
-                difficulty="medium",
-                tags="calcul,mental"
-            ),
-        ]
-        db.session.add_all(courses)
-        db.session.commit()
-        print(f"✅ {len(courses)} cours créés.")
+    # ---------- 5. Création des quiz (un par matière) avec 3 questions chacun ----------
+    maths_questions = [
+        {"text": "Quelle est la dérivée de x² ?", "option1": "x", "option2": "2x", "option3": "x²", "option4": "1", "correct_option": 2, "concept": "derivation"},
+        {"text": "La somme des angles d'un triangle est :", "option1": "90°", "option2": "180°", "option3": "270°", "option4": "360°", "correct_option": 2, "concept": "geometry"},
+        {"text": "Si f(x)=3x+2, que vaut f(2) ?", "option1": "6", "option2": "8", "option3": "10", "option4": "4", "correct_option": 2, "concept": "functions"}
+    ]
+    create_quiz("Quiz Mathématiques", math_subj, teacher_math, "medium", maths_questions)
 
-        # Récupération des IDs des cours
-        cours_fractions = Course.query.filter_by(title="Fractions pour débutants").first()
-        cours_equations = Course.query.filter_by(title="Équations simples").first()
-        cours_conjugaison = Course.query.filter_by(title="Conjugaison du présent").first()
-        cours_calcul = Course.query.filter_by(title="Calcul mental avancé").first()
+    physics_questions = [
+        {"text": "La force gravitationnelle varie en :", "option1": "1/r", "option2": "1/r²", "option3": "r", "option4": "r²", "correct_option": 2, "concept": "gravity"},
+        {"text": "L'unité de la puissance électrique est :", "option1": "Volt", "option2": "Ampère", "option3": "Watt", "option4": "Joule", "correct_option": 3, "concept": "electricity"},
+        {"text": "Quelle est la formule de l'énergie cinétique ?", "option1": "mv", "option2": "½mv²", "option3": "mgh", "option4": "½kx²", "correct_option": 2, "concept": "energy"}
+    ]
+    create_quiz("Quiz Physique", physics_subj, teacher_physics, "medium", physics_questions)
 
-        # ========== 6. EXERCICES ==========
-        exercises = [
-            Exercise(
-                course_id=cours_fractions.id,
-                question_text="Calculez 1/2 + 1/4",
-                correct_answer="3/4",
-                explanation="1/2 = 2/4, donc 2/4 + 1/4 = 3/4",
-                difficulty="easy",
-                tags="fractions"
-            ),
-            Exercise(
-                course_id=cours_fractions.id,
-                question_text="Simplifiez 6/8",
-                correct_answer="3/4",
-                explanation="Divisez le numérateur et le dénominateur par 2",
-                difficulty="easy",
-                tags="fractions"
-            ),
-            Exercise(
-                course_id=cours_equations.id,
-                question_text="Résolvez x + 5 = 12",
-                correct_answer="7",
-                explanation="x = 12 - 5 = 7",
-                difficulty="easy",
-                tags="equations"
-            ),
-            Exercise(
-                course_id=cours_equations.id,
-                question_text="Résolvez 2x = 10",
-                correct_answer="5",
-                explanation="x = 10 / 2 = 5",
-                difficulty="easy",
-                tags="equations"
-            ),
-            Exercise(
-                course_id=cours_conjugaison.id,
-                question_text="Conjuguez le verbe 'manger' au présent, première personne du singulier",
-                correct_answer="je mange",
-                explanation="Le verbe 'manger' se conjugue 'je mange' au présent",
-                difficulty="easy",
-                tags="conjugaison"
-            ),
-            Exercise(
-                course_id=cours_calcul.id,
-                question_text="Calculez 15 × 12",
-                correct_answer="180",
-                explanation="15 × 10 = 150, plus 15 × 2 = 30, total 180",
-                difficulty="medium",
-                tags="calcul"
-            ),
-        ]
-        db.session.add_all(exercises)
-        db.session.commit()
-        print(f"✅ {len(exercises)} exercices créés.")
+    english_questions = [
+        {"text": "What is the past tense of 'go'?", "option1": "Goed", "option2": "Went", "option3": "Gone", "option4": "Going", "correct_option": 2, "concept": "verbs"},
+        {"text": "Which word is a synonym for 'happy'?", "option1": "Sad", "option2": "Joyful", "option3": "Angry", "option4": "Tired", "correct_option": 2, "concept": "vocabulary"},
+        {"text": "Choose the correct sentence:", "option1": "She go to school.", "option2": "She goes to school.", "option3": "She going to school.", "option4": "She went to school yesterday.", "correct_option": 2, "concept": "grammar"}
+    ]
+    create_quiz("Quiz English", english_subj, teacher_english, "easy", english_questions)
 
-        # ========== 7. QUIZ ET QUESTIONS ==========
-        quiz1 = Quiz(title="Quiz fractions", subject_id=math_id, difficulty="easy")
-        quiz2 = Quiz(title="Quiz équations", subject_id=math_id, difficulty="easy")
-        db.session.add_all([quiz1, quiz2])
-        db.session.commit()
-        print(f"✅ Quiz créés : {quiz1.title}, {quiz2.title}")
+    # ---------- 6. Création de 4 étudiants ----------
+    student_data = [
+        (1234, "alice", "alice@example.com", "123"),
+        (2001, "bob", "bob@example.com", "123"),
+        (2002, "carol", "carol@example.com", "123"),
+        (2003, "dave", "dave@example.com", "123"),
+    ]
+    for massar, username, email, pwd in student_data:
+        create_user(massar, username, email, pwd, "student")
 
-        questions_quiz1 = [
-            Question(
-                quiz_id=quiz1.id,
-                text="1/2 + 1/3 = ?",
-                option1="2/5", option2="3/5", option3="5/6", option4="1/5",
-                correct_option=3, concept="fractions"
-            ),
-            Question(
-                quiz_id=quiz1.id,
-                text="Quelle fraction est équivalente à 0.5 ?",
-                option1="1/3", option2="2/4", option3="3/5", option4="4/6",
-                correct_option=2, concept="fractions"
-            ),
-            Question(
-                quiz_id=quiz1.id,
-                text="Simplifiez 8/12",
-                option1="2/3", option2="4/6", option3="1/2", option4="3/4",
-                correct_option=1, concept="fractions"
-            ),
-        ]
-        questions_quiz2 = [
-            Question(
-                quiz_id=quiz2.id,
-                text="Résoudre x + 7 = 15",
-                option1="x=8", option2="x=22", option3="x=7", option4="x=15",
-                correct_option=1, concept="equations"
-            ),
-            Question(
-                quiz_id=quiz2.id,
-                text="Résoudre 3x = 18",
-                option1="x=6", option2="x=5", option3="x=15", option4="x=21",
-                correct_option=1, concept="equations"
-            ),
-        ]
-        db.session.add_all(questions_quiz1 + questions_quiz2)
-        db.session.commit()
-        print(f"✅ {len(questions_quiz1) + len(questions_quiz2)} questions créées.")
+    # ---------- 7. Création d'un gap pour Alice (fractions) ----------
+    alice = User.query.filter_by(username="alice").first()
+    if alice:
+        if not Gap.query.filter_by(user_id=alice.id, concept="fractions").first():
+            gap = Gap(user_id=alice.id, concept="fractions", mastery_level=30.0)
+            db.session.add(gap)
+            print("✅ Gap created for Alice on 'fractions'")
+    else:
+        print("⚠️ Alice not found, cannot create gap")
 
-        # ========== 8. ACTIVITÉS POUR ALICE ==========
-        today = date.today()
-        activities = []
-        for i in range(1, 5):
-            act_date = today - timedelta(days=i)
-            activities.append(UserActivity(
-                user_id=alice.id,
-                activity_date=act_date,
-                xp_earned=10,
-                used_flame_freeze=False
-            ))
-        db.session.add_all(activities)
-        db.session.commit()
-        print(f"✅ {len(activities)} activités créées pour Alice.")
+    # ---------- 8. Création du cours "Gaps Exercises" (utilisé par l'IA) ----------
+    gaps_course = get_or_create_gaps_course()
+    print(f"✅ Gaps course ready: {gaps_course.title}")
 
-        # ========== 9. LACUNES POUR ALICE ==========
-        gaps = [
-            Gap(user_id=alice.id, concept="fractions", mastery_level=30.0),
-            Gap(user_id=alice.id, concept="equations", mastery_level=45.0),
-        ]
-        db.session.add_all(gaps)
-        db.session.commit()
-        print(f"✅ {len(gaps)} lacunes créées pour Alice.")
-
-        # ========== 10. QUÊTES HEBDOMADAIRES ==========
-        if Quest.query.count() == 0:
-            quests_data = [
-                ("Apprenti actif", "Termine 5 exercices", "exercises", 5, 10, 20),
-                ("Flammèche", "Maintiens ta flamme 3 jours", "streak", 3, 15, 30),
-                ("Collectionneur d'XP", "Gagne 100 XP cette semaine", "xp", 100, 20, 50),
-                ("Assidu", "Connecte-toi 5 jours", "login_days", 5, 10, 40),
-            ]
-            for name, desc, obj_type, target, gems_reward, xp_reward in quests_data:
-                db.session.add(Quest(
-                    name=name,
-                    description=desc,
-                    objective_type=obj_type,
-                    objective_target=target,
-                    reward_gems=gems_reward,
-                    reward_xp=xp_reward,
-                    is_weekly=True
-                ))
-            db.session.commit()
-            print(f"✅ {len(quests_data)} quêtes créées.")
-
-        # ========== 11. AMITIÉ ENTRE ALICE ET BOB ==========
-        friendship = Friend(
-            user_id=alice.id,
-            friend_id=bob.id,
-            status="accepted",
-            created_at=datetime.utcnow()
-        )
-        db.session.add(friendship)
-        db.session.commit()
-        print("✅ Relation d'amitié créée entre Alice et Bob.")
-
-        # ========== RÉCAPITULATIF ==========
-        print("\n🎉 Toutes les données initiales ont été insérées avec succès !")
-        print("\n=== Comptes de test ===")
-        print("Admin : massar=999999, password=admin123")
-        print("Enseignant : massar=111111, password=teacher123")
-        print("Élève Alice : massar=123456, password=alice123")
-        print("Élève Bob : massar=654321, password=bob123")
-        print("\nQuiz disponibles :")
-        print(f"  - Quiz Fractions (ID: {quiz1.id})")
-        print(f"  - Quiz Équations (ID: {quiz2.id})")
-
-if __name__ == "__main__":
-    init_database()
+    db.session.commit()
+    print("\n🎉 Database seeding completed successfully!")

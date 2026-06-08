@@ -28,6 +28,7 @@ const translations = {
     weakTopics: "Weak Topics",
     reviewNow: "Review now",
     pendingUsers: "Pending Users",  // Ajouté
+    addTeacher: "Add teacher",
   },
 
   fr: {
@@ -55,6 +56,7 @@ const translations = {
     weakTopics: "Points faibles",
     reviewNow: "Réviser maintenant",
     pendingUsers: "Inscriptions en attente",  // Ajouté
+    addTeacher: "Ajouter un enseignant",
   },
 
   ar: {
@@ -82,6 +84,7 @@ const translations = {
     weakTopics: "نقاط الضعف",
     reviewNow: "راجع الآن",
     pendingUsers: "المستخدمون المنتظرون",  // Ajouté
+    addTeacher: "إضافة أستاذ",
   },
 };
 

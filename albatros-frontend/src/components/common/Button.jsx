@@ -10,7 +10,7 @@ export default function Button({
     primary: "bg-blue-600 text-white hover:bg-blue-700",
     secondary: "bg-emerald-500 text-white hover:bg-emerald-600",
     orange: "bg-orange-500 text-white hover:bg-orange-600",
-    outline: "border border-slate-300 text-slate-700 hover:bg-slate-100",
+    outline: "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50",
     danger: "bg-red-500 text-white hover:bg-red-600",
   };
 

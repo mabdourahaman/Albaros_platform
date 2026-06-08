@@ -10,6 +10,7 @@ def call_ollama(prompt: str, temperature: float = 0.7, max_tokens: int = 2000, t
         "model": MODEL_NAME,
         "prompt": prompt,
         "stream": False,
+        "format": "json",
         "options": {"temperature": temperature, "num_predict": max_tokens}
     }
     try:

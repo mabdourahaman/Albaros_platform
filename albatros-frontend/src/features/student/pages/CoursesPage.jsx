@@ -7,14 +7,18 @@ import { getCourses } from "../../../services/courseService";
 export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [fileUrl, setFileUrl] = useState("");
+  const [fileExtension, setFileExtension] = useState("");
 
   useEffect(() => {
     async function loadCourses() {
       try {
-        const data = await getCourses();
-        setCourses(data);
-      } catch (error) {
-        console.error("Error loading courses:", error);
+        const response = await api.get("/student/courses");
+        setCourses(response.data);
+      } catch (err) {
+        setError("Unable to load courses.");
       } finally {
         setLoading(false);
       }
@@ -23,39 +27,69 @@ export default function CoursesPage() {
     loadCourses();
   }, []);
 
-  if (loading) return <Loader message="Loading courses..." />;
+  const openCourseFile = (course) => {
+    if (course.file_url) {
+      // Construct full URL
+      const fullUrl = `${api.defaults.baseURL}${course.file_url}`;
+      setFileUrl(fullUrl);
+      setFileExtension(course.file_extension);
+      setSelectedCourse(course.id);
+    } else {
+      alert("No file attached to this course.");
+    }
+  };
+
+  const closeModal = () => {
+    setSelectedCourse(null);
+    setFileUrl("");
+    setFileExtension("");
+  };
+
+  if (loading) return <Loader />;
+  if (error) return <div className="text-center text-red-500">{error}</div>;
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold text-slate-900">
-        Courses
-      </h1>
-
-      <p className="mt-2 text-slate-500">
-        Choose a course and start learning.
-      </p>
+      <h1 className="text-3xl font-extrabold">Courses</h1>
+      <p className="mt-2">Browse your available courses and open the materials.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mt-6">
         {courses.map((course) => (
           <Card key={course.id}>
-            <div className="w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-700 flex items-center justify-center">
-              <BookOpen />
-            </div>
-
-            <h2 className="mt-4 text-xl font-extrabold">
-              {course.title}
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              {course.description}
-            </p>
-
-            <p className="mt-3 text-sm font-bold text-cyan-600">
-              {course.subject} - {course.level}
-            </p>
+            <h2 className="text-xl font-extrabold">{course.title}</h2>
+            <p className="mt-2 text-sm">{course.description}</p>
+            <button
+              onClick={() => openCourseFile(course)}
+              className="mt-5 w-full bg-blue-600 text-white font-bold py-2 rounded-xl hover:bg-blue-700 transition"
+            >
+              Open course
+            </button>
           </Card>
         ))}
       </div>
+
+      {selectedCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold dark:text-white">Course material</h2>
+              <button onClick={closeModal} className="text-red-500 text-2xl">&times;</button>
+            </div>
+            <div className="flex-1 p-2 overflow-auto">
+              {fileExtension === "pdf" ? (
+                <iframe src={fileUrl} className="w-full h-[80vh]" title="PDF Viewer" />
+              ) : (
+                <div className="text-center py-10">
+                  <p className="mb-4">This file type (.{fileExtension}) cannot be previewed.</p>
+                  <a href={fileUrl} download className="bg-blue-600 text-white px-4 py-2 rounded-xl">
+                    Download file
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
