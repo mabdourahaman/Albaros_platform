@@ -6,6 +6,7 @@ import { useSettings } from "../../../context/SettingsContext";
 
 export default function UserManagementPage() {
   const { darkMode } = useSettings();
+
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);

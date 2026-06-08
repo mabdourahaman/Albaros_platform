@@ -32,14 +32,16 @@ export default function ManageCoursesPage() {
 
   const fetchCourses = async () => {
     try {
-      const res = await api.get("/teacher/courses");
-      setCourses(res.data);
+      setLoading(true);
+      setError("");
+      const response = await api.get("/teacher/courses");
+      setCourses(response.data);
     } catch (err) {
       setError("Unable to load courses.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const fetchSubjects = async () => {
     try {
@@ -103,7 +105,11 @@ export default function ManageCoursesPage() {
     } finally {
       setModalLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   if (loading) return <Loader />;
   if (error) return <div className="text-red-500 text-center">{error}</div>;

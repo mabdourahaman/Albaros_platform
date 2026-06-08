@@ -1,28 +1,46 @@
-# models.py
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import db
 from sqlalchemy.orm import relationship
 
-# (ajout)
+
 class PendingUser(db.Model):
-    __tablename__ = 'pending_users'
+    __tablename__ = "pending_users"
+
     id = db.Column(db.Integer, primary_key=True)
     massar = db.Column(db.String(20), unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), default='student')
-    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
+    role = db.Column(db.String(20), default="student")
+    status = db.Column(db.String(20), default="email_pending")
+    level = db.Column(db.String(100), nullable=True)
+    subject = db.Column(db.String(100), nullable=True)
+    email_verified = db.Column(db.Boolean, default=False)
+    verification_code = db.Column(db.String(10), nullable=True)
+    verification_code_created_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # Facultatif : lien vers l'utilisateur créé après validation
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "massar": self.massar,
+            "username": self.username,
+            "email": self.email,
+            "role": self.role,
+            "status": self.status,
+            "level": self.level,
+            "subject": self.subject,
+            "email_verified": self.email_verified,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -32,37 +50,59 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='student')
+    role = db.Column(db.String(20), nullable=False, default="student")
+    level = db.Column(db.String(100), nullable=True)
+    subject = db.Column(db.String(100), nullable=True)
+    email_verified = db.Column(db.Boolean, default=True)
+    two_factor_enabled = db.Column(db.Boolean, default=False)
+    two_factor_code = db.Column(db.String(10), nullable=True)
+    two_factor_code_created_at = db.Column(db.DateTime, nullable=True)
+    pending_email = db.Column(db.String(120), nullable=True)
+    pending_email_code = db.Column(db.String(10), nullable=True)
+    pending_email_code_created_at = db.Column(db.DateTime, nullable=True)
     flame = db.Column(db.Integer, default=0)
     last_active_date = db.Column(db.Date, nullable=True)
     gems = db.Column(db.Integer, default=0)
     total_xp = db.Column(db.Integer, default=0)
-    
-    # Relations
-    inventory = relationship('InventoryItem', backref='user', lazy='dynamic')
-    activities = relationship('UserActivity', backref='user', lazy='dynamic')
-    quest_progress = relationship('UserQuestProgress', backref='user', lazy='dynamic')
-    sent_friend_requests = relationship('Friend', foreign_keys='Friend.user_id', backref='from_user', lazy='dynamic')
-    received_friend_requests = relationship('Friend', foreign_keys='Friend.friend_id', backref='to_user', lazy='dynamic')
-    quiz_results = relationship('QuizResult', backref='user', lazy='dynamic')
-    gaps = relationship('Gap', backref='user', lazy='dynamic')
-    
+
+    inventory = relationship("InventoryItem", backref="user", lazy="dynamic")
+    activities = relationship("UserActivity", backref="user", lazy="dynamic")
+    quest_progress = relationship("UserQuestProgress", backref="user", lazy="dynamic")
+    sent_friend_requests = relationship(
+        "Friend",
+        foreign_keys="Friend.user_id",
+        backref="from_user",
+        lazy="dynamic",
+    )
+    received_friend_requests = relationship(
+        "Friend",
+        foreign_keys="Friend.friend_id",
+        backref="to_user",
+        lazy="dynamic",
+    )
+    quiz_results = relationship("QuizResult", backref="user", lazy="dynamic")
+    gaps = relationship("Gap", backref="user", lazy="dynamic")
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-    
+
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-    
+
     def to_dict(self):
         return {
-            'id': self.id,
-            'massar': self.massar,
-            'username': self.username,
-            'email': self.email,
-            'role': self.role,
-            'flame': self.flame,
-            'gems': self.gems,
-            'total_xp': self.total_xp
+            "id": self.id,
+            "massar": self.massar,
+            "username": self.username,
+            "email": self.email,
+            "role": self.role,
+            "level": self.level,
+            "subject": self.subject,
+            "email_verified": self.email_verified,
+            "two_factor_enabled": self.two_factor_enabled,
+            "flame": self.flame,
+            "gems": self.gems,
+            "total_xp": self.total_xp,
         }
     
 class PasswordReset(db.Model):
@@ -76,23 +116,29 @@ class PasswordReset(db.Model):
 
     user = db.relationship('User', backref='password_resets')
 
+
 class InventoryItem(db.Model):
-    __tablename__ = 'inventory_items'
+    __tablename__ = "inventory_items"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     item_type = db.Column(db.String(50))
     quantity = db.Column(db.Integer, default=0)
 
+
 class UserActivity(db.Model):
-    __tablename__ = 'user_activities'
+    __tablename__ = "user_activities"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     activity_date = db.Column(db.Date, nullable=False)
     xp_earned = db.Column(db.Integer, default=0)
     used_flame_freeze = db.Column(db.Boolean, default=False)
 
+
 class Quest(db.Model):
-    __tablename__ = 'quests'
+    __tablename__ = "quests"
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(200))
@@ -102,33 +148,40 @@ class Quest(db.Model):
     reward_xp = db.Column(db.Integer, default=0)
     is_weekly = db.Column(db.Boolean, default=True)
 
-    # Relation inverse (optionnelle)
-    user_progresses = relationship('UserQuestProgress', back_populates='quest', lazy='dynamic')
+    user_progresses = relationship(
+        "UserQuestProgress",
+        back_populates="quest",
+        lazy="dynamic",
+    )
+
 
 class UserQuestProgress(db.Model):
-    __tablename__ = 'user_quest_progress'
+    __tablename__ = "user_quest_progress"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    quest_id = db.Column(db.Integer, db.ForeignKey('quests.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"))
     progress = db.Column(db.Integer, default=0)
     completed = db.Column(db.Boolean, default=False)
     claimed = db.Column(db.Boolean, default=False)
     week_start_date = db.Column(db.Date)
 
-    # Relation cruciale pour accéder à l'objet Quest
-    quest = relationship('Quest', back_populates='user_progresses')
+    quest = relationship("Quest", back_populates="user_progresses")
+
 
 class Friend(db.Model):
-    __tablename__ = 'friends'
+    __tablename__ = "friends"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    friend_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    status = db.Column(db.String(20), default='pending')
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    friend_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    status = db.Column(db.String(20), default="pending")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ---------------- Modules pédagogiques ----------------
+
 class Subject(db.Model):
-    __tablename__ = 'subjects'
+    __tablename__ = "subjects"
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(200))
@@ -137,7 +190,8 @@ class Subject(db.Model):
     teacher = relationship('User', backref='taught_subjects')  # ← relation
     
 class Course(db.Model):
-    __tablename__ = 'courses'
+    __tablename__ = "courses"
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
@@ -154,9 +208,10 @@ class Course(db.Model):
     teacher = db.relationship('User', foreign_keys=[teacher_id], backref='courses')   # <-- AJOUT
     
 class Exercise(db.Model):
-    __tablename__ = 'exercises'
+    __tablename__ = "exercises"
+
     id = db.Column(db.Integer, primary_key=True)
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"))
     question_text = db.Column(db.Text, nullable=False)
     correct_answer = db.Column(db.String(200), nullable=False)
     explanation = db.Column(db.Text)
@@ -164,19 +219,22 @@ class Exercise(db.Model):
     xp_reward = db.Column(db.Integer, default=20)
     tags = db.Column(db.String(200))
 
+
 class Quiz(db.Model):
-    __tablename__ = 'quizzes'
+    __tablename__ = "quizzes"
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200))
-    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))
+    subject_id = db.Column(db.Integer, db.ForeignKey("subjects.id"))
     difficulty = db.Column(db.String(20))
-    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)   # ← AJOUT
+    teacher_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
 
 class Question(db.Model):
-    __tablename__ = 'questions'
+    __tablename__ = "questions"
+
     id = db.Column(db.Integer, primary_key=True)
-    quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'))
+    quiz_id = db.Column(db.Integer, db.ForeignKey("quizzes.id"))
     text = db.Column(db.Text, nullable=False)
     option1 = db.Column(db.String(200))
     option2 = db.Column(db.String(200))
@@ -185,20 +243,24 @@ class Question(db.Model):
     correct_option = db.Column(db.Integer)
     concept = db.Column(db.String(100))
 
+
 class QuizResult(db.Model):
-    __tablename__ = 'quiz_results'
+    __tablename__ = "quiz_results"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    quiz_id = db.Column(db.Integer, db.ForeignKey("quizzes.id"))
     score = db.Column(db.Float)
     answers_json = db.Column(db.Text)
     gaps_json = db.Column(db.Text)
     date_taken = db.Column(db.DateTime, default=datetime.utcnow)
 
+
 class Gap(db.Model):
-    __tablename__ = 'gaps'
+    __tablename__ = "gaps"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     concept = db.Column(db.String(100))
     mastery_level = db.Column(db.Float, default=0.0)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)

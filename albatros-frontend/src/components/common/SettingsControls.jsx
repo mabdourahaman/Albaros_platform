@@ -1,4 +1,3 @@
-import { Languages, Moon, Sun } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 
 export default function SettingsControls() {
@@ -6,35 +5,47 @@ export default function SettingsControls() {
 
   return (
     <div className="flex items-center gap-2">
-      <div
-        className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${
+      <select
+        value={language}
+        onChange={(e) => setLanguage(e.target.value)}
+        className={`px-3 py-2 rounded-xl border text-sm font-bold outline-none cursor-pointer ${
           darkMode
-            ? "bg-slate-900 border-slate-700 text-white"
-            : "bg-white border-slate-200 text-slate-700"
+            ? "bg-slate-900 text-white border-slate-700"
+            : "bg-white text-slate-900 border-slate-200"
         }`}
       >
-        <Languages size={18} />
-
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className="bg-transparent outline-none text-sm font-semibold"
+        <option
+          value="en"
+          className={darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"}
         >
-          <option value="en">EN</option>
-          <option value="fr">FR</option>
-          <option value="ar">AR</option>
-        </select>
-      </div>
+          EN
+        </option>
+
+        <option
+          value="fr"
+          className={darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"}
+        >
+          FR
+        </option>
+
+        <option
+          value="ar"
+          className={darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"}
+        >
+          AR
+        </option>
+      </select>
 
       <button
+        type="button"
         onClick={() => setDarkMode(!darkMode)}
-        className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+        className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
           darkMode
-            ? "bg-slate-900 border-slate-700 text-yellow-300"
-            : "bg-white border-slate-200 text-slate-700"
+            ? "bg-slate-900 text-white border-slate-700 hover:bg-slate-800"
+            : "bg-white text-slate-900 border-slate-200 hover:bg-slate-100"
         }`}
       >
-        {darkMode ? <Sun size={19} /> : <Moon size={19} />}
+        {darkMode ? "☀️" : "🌙"}
       </button>
     </div>
   );
