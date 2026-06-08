@@ -123,7 +123,12 @@ export default function ManageExercisesPage() {
             Manage the exercises you have created.
           </p>
         </div>
-        <Button onClick={() => navigate("/teacher/exercises/add")}>+ Add</Button>
+        <Button
+          onClick={() => navigate("/teacher/exercises/add")}
+          className="min-h-[42px] flex items-center justify-center"
+        >
+          + Add
+        </Button>
       </div>
 
       {exercises.length === 0 ? (
@@ -134,20 +139,40 @@ export default function ManageExercisesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {exercises.map((ex) => (
             <div key={ex.id} className="min-w-[300px] max-w-[400px] w-full mx-auto">
-              <Card>
-                <h3 className={`font-bold text-lg line-clamp-2 ${darkMode ? "text-white" : "text-slate-900"}`}>
-                  {ex.question_text}
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">Course ID: {ex.course_id}</p>
-                <p className="text-sm mt-1">
-                  Difficulty: <span className="capitalize">{ex.difficulty}</span>
-                </p>
-                {ex.tags && (
-                  <p className="text-xs text-slate-400 mt-1">Tags: {ex.tags}</p>
-                )}
+              <Card className="flex flex-col justify-between h-full">
+                <div>
+                  <h3 className={`font-bold text-lg line-clamp-2 ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    {ex.question_text}
+                  </h3>
+                  <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                    Course ID: {ex.course_id}
+                  </p>
+                  <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                    Difficulty: <span className="capitalize">{ex.difficulty}</span>
+                  </p>
+                  {ex.tags && (
+                    <p className={`text-xs mt-1 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+                      Tags: {ex.tags}
+                    </p>
+                  )}
+                </div>
                 <div className="mt-4 flex justify-between gap-4">
-                  <Button variant="outline" size="sm" className="flex-1 text-center" onClick={() => openEditModal(ex)}>Edit</Button>
-                  <Button variant="danger" size="sm" className="flex-1 text-center" onClick={() => handleDelete(ex.id)}>Delete</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-center min-h-[42px] flex items-center justify-center"
+                    onClick={() => openEditModal(ex)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="flex-1 text-center min-h-[42px] flex items-center justify-center"
+                    onClick={() => handleDelete(ex.id)}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </Card>
             </div>
@@ -168,7 +193,7 @@ export default function ManageExercisesPage() {
                 value={editForm.course_id}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
                 required
               >
@@ -187,7 +212,7 @@ export default function ManageExercisesPage() {
                 value={editForm.question_text}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
                 required
               />
@@ -199,7 +224,7 @@ export default function ManageExercisesPage() {
                 value={editForm.correct_answer}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
                 required
               />
@@ -211,7 +236,7 @@ export default function ManageExercisesPage() {
                 value={editForm.explanation}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
               />
 
@@ -220,7 +245,7 @@ export default function ManageExercisesPage() {
                 value={editForm.difficulty}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
               >
                 <option value="easy">Easy</option>
@@ -235,13 +260,24 @@ export default function ManageExercisesPage() {
                 value={editForm.tags}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
               />
 
               <div className="flex justify-end gap-3 mt-4">
-                <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
-                <Button type="submit" disabled={modalLoading}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeModal}
+                  className="min-h-[42px] flex items-center justify-center"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={modalLoading}
+                  className="min-h-[42px] flex items-center justify-center"
+                >
                   {modalLoading ? "Saving..." : "Save changes"}
                 </Button>
               </div>

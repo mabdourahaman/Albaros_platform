@@ -8,7 +8,8 @@ import {
   FilePlus,
   GraduationCap,
   Clock,
-  FileText
+  FileText,
+  TrendingUp    // ← nouvelle icône pour Scores
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 
@@ -23,7 +24,7 @@ export default function Sidebar({ role, onLinkClick }) {
       { label: t.exercises, to: "/student/exercises", icon: FilePlus },
       { label: t.recommendations, to: "/student/recommendations", icon: GraduationCap },
       { label: t.progress, to: "/student/progress", icon: BarChart3 },
-      { label: t.scores, to: "/student/scores", icon: BarChart3 },
+      { label: t.scores, to: "/student/scores", icon: TrendingUp },   // ← modifié
     ],
 
     teacher: [
@@ -33,7 +34,6 @@ export default function Sidebar({ role, onLinkClick }) {
       { label: "Quiz", to: "/teacher/quizzes", icon: GraduationCap },
       { label: t.students, to: "/teacher/students", icon: Users },
       { label: t.monitoring, to: "/teacher/monitoring", icon: BarChart3 },
-
     ],
 
     admin: [
@@ -48,30 +48,26 @@ export default function Sidebar({ role, onLinkClick }) {
   const currentLinks = links[role] || [];
 
   return (
-    <aside className="group w-20 hover:w-72 bg-cyan-600 text-white min-h-screen p-4 flex flex-col transition-all duration-300 overflow-hidden">
+    <aside className="group w-20 hover:w-72 bg-cyan-600 text-white h-full p-4 flex flex-col transition-all duration-300 overflow-hidden flex-shrink-0">
       <div className="mb-8 flex items-center gap-3">
         <div className="min-w-12 w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
           <GraduationCap size={28} />
         </div>
-
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
           <h1 className="text-xl font-extrabold leading-tight">Albatros</h1>
           <p className="text-sm text-cyan-100 capitalize">{role} space</p>
         </div>
       </div>
 
-      <nav className="space-y-2">
+      <nav className="space-y-2 overflow-y-auto flex-1">
         {currentLinks.map((item) => {
           const Icon = item.icon;
-
           return (
             <NavLink
               key={item.to}
               to={item.to}
               end
-              onClick={() => {
-                if (onLinkClick) onLinkClick();
-              }}
+              onClick={() => onLinkClick?.()}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-semibold transition ${
                   isActive

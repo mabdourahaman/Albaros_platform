@@ -114,22 +114,22 @@ export default function StudentDashboard() {
           <table className="w-full text-sm">
             <thead className={`border-b ${darkMode ? "border-slate-700" : "border-slate-200"}`}>
               <tr>
-                <th className="py-2 text-left">Rank</th>
-                <th className="py-2 text-left">Student</th>
-                <th className="py-2 text-right">XP</th>
+                <th className={`py-2 text-left ${darkMode ? "text-slate-300" : "text-slate-600"}`}>Rank</th>
+                <th className={`py-2 text-left ${darkMode ? "text-slate-300" : "text-slate-600"}`}>Student</th>
+                <th className={`py-2 text-right ${darkMode ? "text-slate-300" : "text-slate-600"}`}>XP</th>
               </tr>
             </thead>
             <tbody>
               {leaderboard.map((student, idx) => (
                 <tr key={student.id} className={`border-b ${darkMode ? "border-slate-700" : "border-slate-100"}`}>
-                  <td className="py-2 font-bold">{idx + 1}</td>
-                  <td className="py-2">{student.username}</td>
-                  <td className="py-2 text-right">{student.total_xp} XP</td>
+                  <td className={`py-2 font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>{idx + 1}</td>
+                  <td className={`py-2 ${darkMode ? "text-white" : "text-slate-900"}`}>{student.username}</td>
+                  <td className={`py-2 text-right ${darkMode ? "text-white" : "text-slate-900"}`}>{student.total_xp} XP</td>
                 </tr>
               ))}
               {leaderboard.length === 0 && (
                 <tr>
-                  <td colSpan="3" className="text-center py-4 text-slate-500">
+                  <td colSpan="3" className={`text-center py-4 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
                     No students found.
                   </td>
                 </tr>

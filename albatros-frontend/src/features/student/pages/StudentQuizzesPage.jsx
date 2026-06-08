@@ -10,6 +10,7 @@ export default function StudentQuizzesPage() {
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
+  const [completedQuizIds, setCompletedQuizIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedSubject, setExpandedSubject] = useState(null);
@@ -17,23 +18,24 @@ export default function StudentQuizzesPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [subjectsRes, quizzesRes] = await Promise.all([
+        const [subjectsRes, quizzesRes, resultsRes] = await Promise.all([
           api.get("/subjects"),
           api.get("/quizzes"),
+          api.get("/student/results")
         ]);
-        console.log("Subjects data:", subjectsRes.data);
-        console.log("Quizzes data:", quizzesRes.data);
-        setSubjects(subjectsRes.data || []);
-        setQuizzes(quizzesRes.data || []);
+        setSubjects(Array.isArray(subjectsRes.data) ? subjectsRes.data : []);
+        setQuizzes(Array.isArray(quizzesRes.data) ? quizzesRes.data : []);
+        
+        const completedIds = new Set();
+        if (Array.isArray(resultsRes.data)) {
+          resultsRes.data.forEach(result => {
+            completedIds.add(result.quiz_id);
+          });
+        }
+        setCompletedQuizIds(completedIds);
       } catch (err) {
         console.error("API error:", err);
-        if (err.response) {
-          setError(`Error ${err.response.status}: ${err.response.data?.msg || "Unknown error"}`);
-        } else if (err.request) {
-          setError("No response from server. Is the backend running?");
-        } else {
-          setError(err.message);
-        }
+        setError(`Error ${err.response?.status}: ${err.response?.data?.msg || err.message}`);
       } finally {
         setLoading(false);
       }
@@ -47,6 +49,19 @@ export default function StudentQuizzesPage() {
 
   const quizzesForSubject = (subjectId) => {
     return quizzes.filter((quiz) => quiz.subject_id === subjectId);
+  };
+
+  const separateQuizzes = (subjectQuizzes) => {
+    const newQuizzes = [];
+    const completedQuizzes = [];
+    subjectQuizzes.forEach(quiz => {
+      if (completedQuizIds.has(quiz.id)) {
+        completedQuizzes.push(quiz);
+      } else {
+        newQuizzes.push(quiz);
+      }
+    });
+    return { newQuizzes, completedQuizzes };
   };
 
   if (loading) return <Loader />;
@@ -69,54 +84,97 @@ export default function StudentQuizzesPage() {
         )}
         {subjects.map((subject) => {
           const subjectQuizzes = quizzesForSubject(subject.id);
+          const { newQuizzes, completedQuizzes } = separateQuizzes(subjectQuizzes);
+          const hasAny = newQuizzes.length > 0 || completedQuizzes.length > 0;
+          const isExpanded = expandedSubject === subject.id;
+
           return (
             <div key={subject.id}>
-              {expandedSubject !== subject.id ? (
-                <div
-                  onClick={() => handleSubjectClick(subject.id)}
-                  className={`cursor-pointer rounded-2xl p-6 shadow-md border transition hover:scale-[1.01] ${
-                    darkMode
-                      ? "bg-slate-800 border-slate-700 text-white"
-                      : "bg-white border-slate-200 text-slate-900"
-                  }`}
-                >
-                  <h2 className="text-2xl font-bold">{subject.name}</h2>
-                  {subject.description && (
-                    <p className={`mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-                      {subject.description}
-                    </p>
+              {/* Bloc matière (toujours visible) */}
+              <div
+                onClick={() => handleSubjectClick(subject.id)}
+                className={`cursor-pointer rounded-2xl p-6 shadow-md border transition hover:scale-[1.01] ${
+                  darkMode
+                    ? "bg-slate-800 border-slate-700 text-white"
+                    : "bg-white border-slate-200 text-slate-900"
+                }`}
+              >
+                <h2 className="text-2xl font-bold">{subject.name}</h2>
+                {subject.description && (
+                  <p className={`mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                    {subject.description}
+                  </p>
+                )}
+                <p className="mt-3 text-sm text-blue-500">
+                  {isExpanded ? "Click to hide quizzes ↑" : "Click to see quizzes →"}
+                </p>
+              </div>
+
+              {/* Liste des quiz (affichée si développé) */}
+              {isExpanded && (
+                <div className="mt-4 pl-4 space-y-6">
+                  {newQuizzes.length > 0 && (
+                    <div>
+                      <h3 className={`text-xl font-bold mb-3 ${darkMode ? "text-white" : "text-slate-800"}`}>
+                        New Quizzes
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {newQuizzes.map((quiz) => (
+                          <div
+                            key={quiz.id}
+                            onClick={() => navigate(`/student/quiz/${quiz.id}`)}
+                            className="cursor-pointer transition"
+                          >
+                            <Card className="hover:scale-[1.01] transition-all duration-200">
+                              <div className={`rounded-2xl p-5 transition ${darkMode ? "hover:bg-slate-700" : "hover:bg-amber-50"}`}>
+                                <h3 className={`text-xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                                  {quiz.title}
+                                </h3>
+                                <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                                  Difficulty: {quiz.difficulty}
+                                </p>
+                              </div>
+                            </Card>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  <p className="mt-3 text-sm text-blue-500">Click to see quizzes →</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <button
-                    onClick={() => handleSubjectClick(subject.id)}
-                    className={`mb-2 text-sm underline ${darkMode ? "text-blue-400" : "text-blue-600"}`}
-                  >
-                    ← Back to subjects
-                  </button>
-                  {subjectQuizzes.length === 0 ? (
+
+                  {completedQuizzes.length > 0 && (
+                    <div>
+                      <h3 className={`text-xl font-bold mb-3 ${darkMode ? "text-white" : "text-slate-800"}`}>
+                        Completed Quizzes (Revision)
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {completedQuizzes.map((quiz) => (
+                          <div
+                            key={quiz.id}
+                            onClick={() => navigate(`/student/quiz/${quiz.id}`)}
+                            className="cursor-pointer transition"
+                          >
+                            <Card className="hover:scale-[1.01] transition-all duration-200">
+                              <div className={`rounded-2xl p-5 transition ${darkMode ? "hover:bg-slate-700" : "hover:bg-amber-50"}`}>
+                                <h3 className={`text-xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                                  {quiz.title}
+                                </h3>
+                                <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                                  Difficulty: {quiz.difficulty}
+                                </p>
+                              </div>
+                            </Card>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!hasAny && (
                     <Card>
                       <p className={`text-center ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
                         No quizzes available for this subject yet.
                       </p>
                     </Card>
-                  ) : (
-                    subjectQuizzes.map((quiz) => (
-                      <Card
-                        key={quiz.id}
-                        className="cursor-pointer hover:shadow-lg transition"
-                        onClick={() => navigate(`/student/quiz/${quiz.id}`)}
-                      >
-                        <h3 className={`text-xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
-                          {quiz.title}
-                        </h3>
-                        <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-                          Difficulty: {quiz.difficulty}
-                        </p>
-                      </Card>
-                    ))
                   )}
                 </div>
               )}

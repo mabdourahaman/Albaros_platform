@@ -8,14 +8,14 @@ class PendingUser(db.Model):
     __tablename__ = "pending_users"
 
     id = db.Column(db.Integer, primary_key=True)
-    massar = db.Column(db.String(20), unique=True, nullable=False)
+    massar = db.Column(db.String(20), unique=True, nullable=True)          # nullable pour les enseignants
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default="student")
     status = db.Column(db.String(20), default="email_pending")
-    level = db.Column(db.String(100), nullable=True)
-    subject = db.Column(db.String(100), nullable=True)
+    level = db.Column(db.String(100), nullable=True)                       # niveau (élève)
+    subject = db.Column(db.String(100), nullable=True)                     # matière (enseignant)
     email_verified = db.Column(db.Boolean, default=False)
     verification_code = db.Column(db.String(10), nullable=True)
     verification_code_created_at = db.Column(db.DateTime, nullable=True)
@@ -42,11 +42,12 @@ class PendingUser(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
+
 class User(db.Model):
     __tablename__ = 'users'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    massar = db.Column(db.String(20), unique=True, nullable=False)
+    massar = db.Column(db.String(20), unique=True, nullable=True)          # nullable pour enseignants
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -65,6 +66,7 @@ class User(db.Model):
     gems = db.Column(db.Integer, default=0)
     total_xp = db.Column(db.Integer, default=0)
 
+    # Relations
     inventory = relationship("InventoryItem", backref="user", lazy="dynamic")
     activities = relationship("UserActivity", backref="user", lazy="dynamic")
     quest_progress = relationship("UserQuestProgress", backref="user", lazy="dynamic")
@@ -104,7 +106,8 @@ class User(db.Model):
             "gems": self.gems,
             "total_xp": self.total_xp,
         }
-    
+
+
 class PasswordReset(db.Model):
     __tablename__ = 'password_resets'
     id = db.Column(db.Integer, primary_key=True)
@@ -119,7 +122,6 @@ class PasswordReset(db.Model):
 
 class InventoryItem(db.Model):
     __tablename__ = "inventory_items"
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     item_type = db.Column(db.String(50))
@@ -128,7 +130,6 @@ class InventoryItem(db.Model):
 
 class UserActivity(db.Model):
     __tablename__ = "user_activities"
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     activity_date = db.Column(db.Date, nullable=False)
@@ -138,7 +139,6 @@ class UserActivity(db.Model):
 
 class Quest(db.Model):
     __tablename__ = "quests"
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(200))
@@ -148,16 +148,11 @@ class Quest(db.Model):
     reward_xp = db.Column(db.Integer, default=0)
     is_weekly = db.Column(db.Boolean, default=True)
 
-    user_progresses = relationship(
-        "UserQuestProgress",
-        back_populates="quest",
-        lazy="dynamic",
-    )
+    user_progresses = relationship("UserQuestProgress", back_populates="quest", lazy="dynamic")
 
 
 class UserQuestProgress(db.Model):
     __tablename__ = "user_quest_progress"
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"))
@@ -171,7 +166,6 @@ class UserQuestProgress(db.Model):
 
 class Friend(db.Model):
     __tablename__ = "friends"
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     friend_id = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -181,17 +175,16 @@ class Friend(db.Model):
 
 class Subject(db.Model):
     __tablename__ = "subjects"
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(200))
-    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # ← nouveau
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
 
-    teacher = relationship('User', backref='taught_subjects')  # ← relation
-    
+    teacher = relationship('User', backref='taught_subjects')
+
+
 class Course(db.Model):
     __tablename__ = "courses"
-
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
@@ -205,24 +198,24 @@ class Course(db.Model):
     file_path = db.Column(db.String(300), nullable=True)
 
     subject = db.relationship('Subject', backref='courses')
-    teacher = db.relationship('User', foreign_keys=[teacher_id], backref='courses')   # <-- AJOUT
-    
+    teacher = db.relationship('User', foreign_keys=[teacher_id], backref='courses')
+
+
 class Exercise(db.Model):
     __tablename__ = "exercises"
-
     id = db.Column(db.Integer, primary_key=True)
     course_id = db.Column(db.Integer, db.ForeignKey("courses.id"))
-    question_text = db.Column(db.Text, nullable=False)
-    correct_answer = db.Column(db.String(200), nullable=False)
-    explanation = db.Column(db.Text)
+    question_text = db.Column(db.Text, nullable=True)      # ← devient nullable
+    correct_answer = db.Column(db.String(200), nullable=True)  # ← nullable
+    explanation = db.Column(db.Text, nullable=True)        # ← nullable
     difficulty = db.Column(db.String(20))
     xp_reward = db.Column(db.Integer, default=20)
+    questions = db.Column(db.JSON, nullable=True)
     tags = db.Column(db.String(200))
 
 
 class Quiz(db.Model):
     __tablename__ = "quizzes"
-
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200))
     subject_id = db.Column(db.Integer, db.ForeignKey("subjects.id"))
@@ -232,7 +225,6 @@ class Quiz(db.Model):
 
 class Question(db.Model):
     __tablename__ = "questions"
-
     id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey("quizzes.id"))
     text = db.Column(db.Text, nullable=False)
@@ -246,7 +238,6 @@ class Question(db.Model):
 
 class QuizResult(db.Model):
     __tablename__ = "quiz_results"
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     quiz_id = db.Column(db.Integer, db.ForeignKey("quizzes.id"))
@@ -258,23 +249,22 @@ class QuizResult(db.Model):
 
 class Gap(db.Model):
     __tablename__ = "gaps"
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     concept = db.Column(db.String(100))
     mastery_level = db.Column(db.Float, default=0.0)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
 
+
 class UserExercise(db.Model):
     __tablename__ = 'user_exercises'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'))
-    completed = db.Column(db.Boolean, default=False)       # première fois terminé
-    revision_attempts = db.Column(db.Integer, default=0)    # nombre de fois révisé
+    completed = db.Column(db.Boolean, default=False)
+    revision_attempts = db.Column(db.Integer, default=0)
     last_review_date = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relations
     user = db.relationship('User', backref='user_exercises')
     exercise = db.relationship('Exercise', backref='user_exercises')

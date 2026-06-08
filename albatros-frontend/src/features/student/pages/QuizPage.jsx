@@ -21,14 +21,16 @@ export default function QuizPage() {
     const fetchQuestions = async () => {
       try {
         const response = await api.get(`/quiz/${id}/questions`);
-        setQuestions(response.data);
+        const data = Array.isArray(response.data) ? response.data : [];
+        setQuestions(data);
         const initialAnswers = {};
-        response.data.forEach((q) => {
+        data.forEach((q) => {
           initialAnswers[q.id] = null;
         });
         setAnswers(initialAnswers);
       } catch (err) {
-        setError("Unable to load quiz.");
+        console.error("Quiz load error:", err);
+        setError(err.response?.data?.msg || "Unable to load quiz.");
       } finally {
         setLoading(false);
       }
@@ -59,7 +61,7 @@ export default function QuizPage() {
   };
 
   if (loading) return <Loader />;
-  if (error) return <div className="text-red-500 text-center">{error}</div>;
+  if (error) return <div className="text-red-500 text-center p-4">{error}</div>;
 
   if (submitted && result) {
     return (
@@ -81,8 +83,28 @@ export default function QuizPage() {
               </div>
             )}
           </div>
-          <Button className="mt-6" onClick={() => navigate("/student")}>
-            Back to Dashboard
+          <div className="flex justify-between mt-6">
+            <Button variant="outline" onClick={() => navigate("/student/quizzes")}>
+              ← Back to Quizzes
+            </Button>
+            <Button onClick={() => navigate("/student")}>
+              Back to Dashboard
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="max-w-3xl mx-auto text-center">
+        <Card>
+          <p className={`text-lg ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+            No questions found for this quiz.
+          </p>
+          <Button className="mt-4" onClick={() => navigate("/student/quizzes")}>
+            Back to Quizzes
           </Button>
         </Card>
       </div>
@@ -104,10 +126,14 @@ export default function QuizPage() {
               <button
                 key={optIdx}
                 onClick={() => handleAnswerChange(q.id, optIdx + 1)}
-                className={`px-5 py-4 rounded-2xl border text-left font-bold transition ${
+                className={`px-5 py-4 rounded-2xl border text-left font-bold transition-all duration-200 ${
                   answers[q.id] === optIdx + 1
-                    ? "border-blue-600 bg-blue-50 dark:bg-blue-900 dark:text-white text-blue-700"
-                    : `border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 ${darkMode ? "text-white" : "text-slate-900"}`
+                    ? darkMode
+                      ? "border-blue-500 bg-blue-900/70 text-white"
+                      : "border-blue-600 bg-blue-100 text-blue-800"
+                    : darkMode
+                    ? "border-slate-700 text-white hover:bg-slate-700"
+                    : "border-slate-200 text-slate-900 hover:bg-amber-50"
                 }`}
               >
                 {String.fromCharCode(65 + optIdx)}. {opt}

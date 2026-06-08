@@ -12,6 +12,7 @@ import {
   Phone,
   MapPin,
   LogIn,
+  ArrowRight,
 } from "lucide-react";
 import heroImage from "../../assets/home_page_pic.jpg";
 
@@ -66,7 +67,6 @@ export default function HomePage() {
       phone: "+212 600 000 000",
       address: "Meknes, Morocco",
     },
-
     fr: {
       home: "Accueil",
       about: "À propos",
@@ -113,7 +113,6 @@ export default function HomePage() {
       phone: "+212 600 000 000",
       address: "Meknès, Maroc",
     },
-
     ar: {
       home: "الرئيسية",
       about: "حول المنصة",
@@ -161,22 +160,16 @@ export default function HomePage() {
     },
   };
 
-  const t = content[language];
+  const safeLang = language && content[language] ? language : "en";
+  const t = content[safeLang];
 
-  const dropdownBox = darkMode
-    ? "bg-slate-900 border-slate-700 text-white"
-    : "bg-white border-slate-200 text-slate-900";
-
-  const dropdownTitle = darkMode ? "text-slate-400" : "text-slate-500";
-
-  const dropdownItem = darkMode
-    ? "text-slate-100 hover:bg-slate-800"
-    : "text-slate-800 hover:bg-slate-100";
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const drawerTransition = mobileMenuOpen ? "translate-x-0" : "translate-x-full";
 
   return (
     <main
-      dir={language === "ar" ? "rtl" : "ltr"}
+      dir={safeLang === "ar" ? "rtl" : "ltr"}
       className={`min-h-screen transition ${
         darkMode ? "bg-slate-950 text-white" : "bg-white text-slate-900"
       }`}
@@ -196,34 +189,29 @@ export default function HomePage() {
             </span>
           </Link>
 
-          {/* Navigation desktop : liens + boutons */}
+          {/* Navigation desktop */}
           <div className="hidden lg:flex items-center gap-8 font-bold uppercase text-sm tracking-wide">
             <a href="#home" className="text-cyan-500">
               {t.home}
             </a>
-
             <a
               href="#about"
               className={darkMode ? "text-slate-200" : "text-slate-700"}
             >
               {t.about}
             </a>
-
             <a
               href="#courses"
               className={darkMode ? "text-slate-200" : "text-slate-700"}
             >
               {t.courses}
             </a>
-
             <a
               href="#contact"
               className={darkMode ? "text-slate-200" : "text-slate-700"}
             >
               {t.contact}
             </a>
-
-            {/* Boutons Login/Register dans la barre desktop */}
             <Link
               to="/login"
               className={`px-4 py-2 rounded-xl font-bold transition ${
@@ -243,134 +231,105 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Zone droite pour mobile : seulement l'icône menu et le sélecteur de langue (optionnel) */}
           <div className="flex items-center gap-2">
             <SettingsControls />
-
             <button
               onClick={toggleMobileMenu}
               className="lg:hidden p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
               aria-label="Menu"
             >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              <Menu size={24} />
             </button>
-
-            {mobileMenuOpen && (
-              <div
-                className={`absolute top-16 right-4 w-64 rounded-2xl border shadow-2xl p-3 z-[9999] ${dropdownBox}`}
-              >
-                <p
-                  className={`px-4 py-2 text-xs font-extrabold uppercase tracking-widest ${dropdownTitle}`}
-                >
-                  {t.userAccess}
-                </p>
-
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-4 rounded-xl font-extrabold transition ${dropdownItem}`}
-                >
-                  <LogIn size={22} />
-                  {t.login}
-                </Link>
-
-                <Link
-                  to="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-4 rounded-xl font-extrabold transition ${dropdownItem}`}
-                >
-                  <UserPlus size={22} />
-                  {t.register}
-                </Link>
-              </div>
-            )}
           </div>
         </nav>
+      </header>
 
-        {/* Menu mobile (tiroir) - contient liens + boutons */}
-        {mobileMenuOpen && (
-          <>
-            <div
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-              onClick={toggleMobileMenu}
-            />
-            <div
-              className={`fixed top-20 left-0 right-0 z-50 shadow-lg p-5 flex flex-col gap-4 lg:hidden ${
-                darkMode ? "bg-slate-900" : "bg-white"
-              }`}
-            >
+      {/* Overlay et tiroir mobile - couleurs adaptatives */}
+      <div
+        className={`fixed inset-0 z-50 transition-all duration-300 lg:hidden ${
+          mobileMenuOpen ? "visible bg-black/50" : "invisible bg-black/0"
+        }`}
+        onClick={closeMobileMenu}
+      >
+        <div
+          className={`absolute top-0 right-0 h-full w-80 max-w-[80vw] shadow-xl transform transition-transform duration-300 ease-out ${drawerTransition} ${
+            darkMode ? "bg-slate-900 border-l border-slate-800" : "bg-white border-l border-slate-200"
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col h-full p-6">
+            <div className="flex justify-end">
+              <button
+                onClick={closeMobileMenu}
+                className={`p-2 rounded-lg transition ${
+                  darkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-slate-100 text-slate-600"
+                }`}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <nav className="flex flex-col gap-6 mt-8 text-lg font-semibold">
               <a
                 href="#home"
-                onClick={toggleMobileMenu}
-                className="text-cyan-500 font-bold py-2 text-lg"
+                onClick={closeMobileMenu}
+                className={`transition ${
+                  darkMode ? "text-cyan-400 hover:text-cyan-300" : "text-cyan-600 hover:text-cyan-700"
+                }`}
               >
                 {t.home}
               </a>
               <a
                 href="#about"
-                onClick={toggleMobileMenu}
-                className={`py-2 text-lg ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+                onClick={closeMobileMenu}
+                className={`transition ${
+                  darkMode ? "text-slate-200 hover:text-white" : "text-slate-700 hover:text-slate-900"
+                }`}
               >
                 {t.about}
               </a>
               <a
                 href="#courses"
-                onClick={toggleMobileMenu}
-                className={`py-2 text-lg ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+                onClick={closeMobileMenu}
+                className={`transition ${
+                  darkMode ? "text-slate-200 hover:text-white" : "text-slate-700 hover:text-slate-900"
+                }`}
               >
                 {t.courses}
               </a>
               <a
                 href="#contact"
-                onClick={toggleMobileMenu}
-                className={`py-2 text-lg ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+                onClick={closeMobileMenu}
+                className={`transition ${
+                  darkMode ? "text-slate-200 hover:text-white" : "text-slate-700 hover:text-slate-900"
+                }`}
               >
                 {t.contact}
               </a>
-
-              <div className="h-px bg-slate-200 dark:bg-slate-700 my-2" />
-
+              <div className={`h-px my-2 ${darkMode ? "bg-slate-700" : "bg-slate-200"}`} />
               <Link
                 to="/login"
-                onClick={toggleMobileMenu}
-                className={`block text-center px-4 py-3 rounded-xl font-bold transition ${
+                onClick={closeMobileMenu}
+                className={`flex items-center gap-2 p-3 rounded-xl transition ${
                   darkMode
-                    ? "bg-slate-800 text-white hover:bg-slate-700"
-                    : "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50"
+                    ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                    : "bg-slate-100 text-slate-800 hover:bg-slate-200"
                 }`}
               >
-                {t.login}
+                <LogIn size={20} /> {t.login}
               </Link>
               <Link
                 to="/register"
-                onClick={toggleMobileMenu}
-                className="block text-center px-4 py-3 rounded-xl bg-cyan-500 text-white font-bold hover:bg-cyan-600 transition"
+                onClick={closeMobileMenu}
+                className="flex items-center gap-2 p-3 rounded-xl bg-cyan-500 text-white hover:bg-cyan-600 transition"
               >
-                {t.register}
-                <ArrowRight size={16} className="ml-1 inline" />
+                <UserPlus size={20} /> {t.register}
               </Link>
+            </nav>
+          </div>
+        </div>
+      </div>
 
-              <div className="pt-2">
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border outline-none ${
-                    darkMode
-                      ? "bg-slate-800 border-slate-700 text-white"
-                      : "bg-white border-slate-200 text-slate-700"
-                  }`}
-                >
-                  <option value="en">English</option>
-                  <option value="fr">Français</option>
-                  <option value="ar">العربية</option>
-                </select>
-              </div>
-            </div>
-          </>
-        )}
-      </header>
-
-      {/* Section hero et about - inchangées */}
+      {/* Sections Hero, About, Courses, Contact (inchangées - déjà adaptatives) */}
       <section
         id="home"
         className="relative min-h-screen flex items-center pt-20 overflow-hidden"
@@ -379,27 +338,22 @@ export default function HomePage() {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${heroImage})` }}
         />
-
         <div
           className={`absolute inset-0 ${
             darkMode ? "bg-slate-950/75" : "bg-slate-950/60"
           }`}
         />
-
         <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-10 w-full">
           <div className="max-w-3xl">
             <p className="text-cyan-400 font-extrabold uppercase tracking-[0.25em] text-sm md:text-base">
               {t.badge}
             </p>
-
             <h1 className="mt-6 text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight">
               {t.title}
             </h1>
-
             <p className="mt-6 text-lg md:text-xl text-slate-100 leading-relaxed max-w-2xl">
               {t.description}
             </p>
-
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link
                 to="/login"
@@ -407,7 +361,6 @@ export default function HomePage() {
               >
                 {t.primaryBtn}
               </Link>
-
               <a
                 href="#about"
                 className="px-8 py-4 bg-white text-slate-900 font-extrabold text-center hover:bg-slate-100 transition rounded-xl shadow-lg"
@@ -430,12 +383,10 @@ export default function HomePage() {
             <p className="text-cyan-500 font-extrabold uppercase tracking-widest">
               Albatros
             </p>
-
             <h2 className="mt-4 text-3xl md:text-5xl font-extrabold">
               {t.sectionTitle}
             </h2>
           </div>
-
           <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8">
             <FeatureCard
               darkMode={darkMode}
@@ -443,14 +394,12 @@ export default function HomePage() {
               title={t.card1Title}
               text={t.card1Text}
             />
-
             <FeatureCard
               darkMode={darkMode}
               icon={<GraduationCap size={34} />}
               title={t.card2Title}
               text={t.card2Text}
             />
-
             <FeatureCard
               darkMode={darkMode}
               icon={<BookOpen size={34} />}
@@ -472,11 +421,9 @@ export default function HomePage() {
             <p className="text-cyan-500 font-extrabold uppercase tracking-widest">
               {t.courses}
             </p>
-
             <h2 className="mt-4 text-3xl md:text-5xl font-extrabold">
               {t.coursesTitle}
             </h2>
-
             <p
               className={`mt-5 text-lg leading-relaxed ${
                 darkMode ? "text-slate-300" : "text-slate-500"
@@ -485,9 +432,12 @@ export default function HomePage() {
               {t.coursesSubtitle}
             </p>
           </div>
-
           <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <CourseCard darkMode={darkMode} title={t.math} text={t.mathText} />
+            <CourseCard
+              darkMode={darkMode}
+              title={t.math}
+              text={t.mathText}
+            />
             <CourseCard
               darkMode={darkMode}
               title={t.french}
@@ -518,11 +468,9 @@ export default function HomePage() {
             <p className="text-cyan-500 font-extrabold uppercase tracking-widest">
               {t.contact}
             </p>
-
             <h2 className="mt-4 text-3xl md:text-5xl font-extrabold">
               {t.contactTitle}
             </h2>
-
             <p
               className={`mt-5 text-lg ${
                 darkMode ? "text-slate-300" : "text-slate-500"
@@ -531,7 +479,6 @@ export default function HomePage() {
               {t.contactSubtitle}
             </p>
           </div>
-
           <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8">
             <ContactCard
               darkMode={darkMode}
@@ -539,14 +486,12 @@ export default function HomePage() {
               title="Email"
               value={t.email}
             />
-
             <ContactCard
               darkMode={darkMode}
               icon={<Phone size={30} />}
               title="Phone"
               value={t.phone}
             />
-
             <ContactCard
               darkMode={darkMode}
               icon={<MapPin size={30} />}
@@ -572,9 +517,7 @@ function FeatureCard({ icon, title, text, darkMode }) {
       <div className="w-16 h-16 rounded-2xl bg-cyan-500 text-white flex items-center justify-center">
         {icon}
       </div>
-
       <h3 className="mt-6 text-2xl font-extrabold">{title}</h3>
-
       <p
         className={`mt-4 leading-relaxed ${
           darkMode ? "text-slate-300" : "text-slate-500"
@@ -598,9 +541,7 @@ function CourseCard({ title, text, darkMode }) {
       <div className="w-14 h-14 rounded-2xl bg-cyan-500 text-white flex items-center justify-center">
         <BookOpen size={28} />
       </div>
-
       <h3 className="mt-6 text-2xl font-extrabold">{title}</h3>
-
       <p
         className={`mt-4 leading-relaxed ${
           darkMode ? "text-slate-300" : "text-slate-500"
@@ -624,9 +565,7 @@ function ContactCard({ icon, title, value, darkMode }) {
       <div className="mx-auto w-16 h-16 rounded-2xl bg-cyan-500 text-white flex items-center justify-center">
         {icon}
       </div>
-
       <h3 className="mt-6 text-xl font-extrabold">{title}</h3>
-
       <p
         className={`mt-3 font-semibold ${
           darkMode ? "text-slate-300" : "text-slate-500"

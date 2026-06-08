@@ -15,15 +15,14 @@ export default function ExercisesPage() {
   const [expandedSubject, setExpandedSubject] = useState(null);
   const [showWarning, setShowWarning] = useState(false);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [currentExercise, setCurrentExercise] = useState(null);
-  const [userAnswer, setUserAnswer] = useState("");
+  const [multiAnswers, setMultiAnswers] = useState([]);
+  const [singleAnswer, setSingleAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [isRevision, setIsRevision] = useState(false);
 
-  // Afficher le message d'avertissement pendant 10 secondes
   useEffect(() => {
     setShowWarning(true);
     const timer = setTimeout(() => setShowWarning(false), 10000);
@@ -51,55 +50,70 @@ export default function ExercisesPage() {
     }
   };
 
-  // Récupère les exercices d'une matière (nouveaux)
-  const getNewExercisesBySubject = (subjectId) => {
-    // Il faudrait que l'objet exercise contienne subject_id. Actuellement ce n'est pas le cas.
-    // On doit donc enrichir les données en faisant une jointure. Pour l'instant, on simule avec un filtre vide.
-    // Idéalement, le backend devrait retourner subject_id. Si ce n'est pas le cas, on peut faire un deuxième appel.
-    // Solution simple : récupérer les cours et associer. Mais pour rester simple, je suppose que l'exercice a un champ subject_id.
-    // Si ce n'est pas le cas, il faut modifier le backend.
-    // Je propose une approche alternative : on récupère les cours et on fait le mapping.
-    // Pour ne pas surcharger, je fournis une version qui suppose que les exercices ont subject_id.
-    // Si ce n'est pas le cas, vous devrez adapter le backend.
-    return newExercises.filter(ex => ex.subject_id === subjectId);
-  };
-
-  const getRevisionExercisesBySubject = (subjectId) => {
-    return revisionExercises.filter(ex => ex.subject_id === subjectId);
-  };
-
   const openExerciseModal = (exercise, isRev = false) => {
     setCurrentExercise(exercise);
-    setUserAnswer("");
-    setFeedback(null);
     setIsRevision(isRev);
+    setFeedback(null);
+    if (exercise.multi_question) {
+      setMultiAnswers(new Array(exercise.questions.length).fill(""));
+    } else {
+      setSingleAnswer("");
+    }
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setCurrentExercise(null);
-    setUserAnswer("");
+    setMultiAnswers([]);
+    setSingleAnswer("");
     setFeedback(null);
     if (feedback?.completed) {
       fetchData();
     }
   };
 
-  const handleSubmitAnswer = async () => {
-    if (!userAnswer.trim()) {
+  const handleMultiAnswerChange = (idx, value) => {
+    const newAnswers = [...multiAnswers];
+    newAnswers[idx] = value;
+    setMultiAnswers(newAnswers);
+  };
+
+  const handleSubmitMulti = async () => {
+    if (multiAnswers.some(a => !a.trim())) {
+      alert("Please answer all questions.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const response = await api.post(`/student/exercises/${currentExercise.id}/submit`, {
+        answers: multiAnswers,
+        is_revision: isRevision,
+      });
+      setFeedback(response.data);
+      if (!isRevision && response.data.completed) {
+        fetchData();
+      }
+    } catch (err) {
+      alert("Error submitting answers.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmitSingle = async () => {
+    if (!singleAnswer.trim()) {
       alert("Please enter your answer.");
       return;
     }
     setSubmitting(true);
     try {
       const response = await api.post(`/student/exercises/${currentExercise.id}/submit`, {
-        answer: userAnswer,
+        answer: singleAnswer,
         is_revision: isRevision,
       });
       setFeedback(response.data);
       if (!isRevision && response.data.correct) {
-        // Recharger les listes
         fetchData();
       }
     } catch (err) {
@@ -107,6 +121,12 @@ export default function ExercisesPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const formatXP = (xp) => {
+    if (xp === undefined || xp === null) return "";
+    if (xp > 0) return `+${xp}`;
+    return `${xp}`;
   };
 
   if (loading) return <Loader />;
@@ -133,7 +153,7 @@ export default function ExercisesPage() {
           const isExpanded = expandedSubject === subject.id;
           return (
             <div key={subject.id}>
-              {/* Bloc matière */}
+              {/* Bloc matière avec texte dynamique */}
               <div
                 onClick={() => setExpandedSubject(isExpanded ? null : subject.id)}
                 className={`cursor-pointer rounded-2xl p-6 shadow-md border transition hover:scale-[1.01] ${
@@ -148,7 +168,9 @@ export default function ExercisesPage() {
                     {subject.description}
                   </p>
                 )}
-                <p className="mt-3 text-sm text-blue-500">Click to see exercises →</p>
+                <p className="mt-3 text-sm text-blue-500">
+                  {isExpanded ? "Click to hide exercises ↑" : "Click to see exercises →"}
+                </p>
               </div>
 
               {/* Liste des exercices (visible si expand) */}
@@ -161,14 +183,31 @@ export default function ExercisesPage() {
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {newEx.map((ex) => (
-                          <Card key={ex.id}>
-                            <h4 className={`text-lg font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
-                              Exercise #{ex.id}
-                            </h4>
-                            <p className="mt-2 text-sm line-clamp-2">{ex.question}</p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Difficulty: {ex.difficulty || "medium"}
-                            </p>
+                          <Card key={ex.id} className="flex flex-col justify-between">
+                            <div>
+                              {ex.multi_question ? (
+                                <>
+                                  <h4 className={`text-lg font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                                    Exercise #{ex.id} (Multi)
+                                  </h4>
+                                  <p className={`mt-2 text-sm ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                                    Contains {ex.questions.length} questions
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <h4 className={`text-lg font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                                    Exercise #{ex.id}
+                                  </h4>
+                                  <p className={`mt-2 text-sm line-clamp-2 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                                    {ex.question}
+                                  </p>
+                                </>
+                              )}
+                              <p className={`mt-1 text-xs ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+                                Difficulty: {ex.difficulty || "medium"}
+                              </p>
+                            </div>
                             <Button className="mt-3 w-full" onClick={() => openExerciseModal(ex, false)}>
                               Start
                             </Button>
@@ -185,14 +224,31 @@ export default function ExercisesPage() {
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {revEx.map((ex) => (
-                          <Card key={ex.id}>
-                            <h4 className={`text-lg font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
-                              Exercise #{ex.id}
-                            </h4>
-                            <p className="mt-2 text-sm line-clamp-2">{ex.question}</p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Difficulty: {ex.difficulty || "medium"}
-                            </p>
+                          <Card key={ex.id} className="flex flex-col justify-between">
+                            <div>
+                              {ex.multi_question ? (
+                                <>
+                                  <h4 className={`text-lg font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                                    Exercise #{ex.id} (Multi)
+                                  </h4>
+                                  <p className={`mt-2 text-sm ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                                    Contains {ex.questions.length} questions
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <h4 className={`text-lg font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                                    Exercise #{ex.id}
+                                  </h4>
+                                  <p className={`mt-2 text-sm line-clamp-2 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                                    {ex.question}
+                                  </p>
+                                </>
+                              )}
+                              <p className={`mt-1 text-xs ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+                                Difficulty: {ex.difficulty || "medium"}
+                              </p>
+                            </div>
                             <Button className="mt-3 w-full" variant="outline" onClick={() => openExerciseModal(ex, true)}>
                               Review
                             </Button>
@@ -217,50 +273,106 @@ export default function ExercisesPage() {
         )}
       </div>
 
-      {/* Modal (inchangé) */}
+      {/* Modal - corrigé pour le mode sombre */}
       {modalOpen && currentExercise && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className={`rounded-2xl w-full max-w-2xl shadow-xl ${darkMode ? "bg-slate-900" : "bg-white"}`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
+          <div className={`rounded-2xl w-full max-w-4xl shadow-xl ${darkMode ? "bg-slate-900" : "bg-white"}`}>
             <div className="flex justify-between items-center p-4 border-b dark:border-slate-700">
               <h2 className={`text-xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
-                Exercise #{currentExercise.id}
+                {currentExercise.multi_question ? "Multi‑question Exercise" : `Exercise #${currentExercise.id}`}
               </h2>
               <button onClick={closeModal} className="text-red-500 text-2xl">&times;</button>
             </div>
-            <div className="p-6 space-y-4">
-              <p className={`text-lg ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                {currentExercise.question}
-              </p>
-              <textarea
-                rows="3"
-                placeholder="Your answer..."
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                disabled={!!feedback}
-                className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white placeholder:text-slate-400" : "bg-white border-slate-300 text-black"
-                } ${feedback ? "opacity-70" : ""}`}
-              />
-              {feedback && (
-                <div className={`p-4 rounded-xl ${feedback.correct ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"}`}>
-                  <p className="font-bold">{feedback.correct ? "✓ Correct!" : "✗ Incorrect"}</p>
-                  <p className="mt-1">Correct answer: {feedback.correct_answer}</p>
-                  <p className="mt-1">{feedback.explanation}</p>
-                  <p className="mt-2 text-sm">+{feedback.xp_earned} XP{!isRevision && feedback.gems_earned > 0 ? `, +${feedback.gems_earned} gems` : ""}</p>
-                </div>
-              )}
-              {!feedback && (
-                <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={closeModal}>Cancel</Button>
-                  <Button onClick={handleSubmitAnswer} disabled={submitting}>
-                    {submitting ? "Submitting..." : "Submit Answer"}
-                  </Button>
-                </div>
-              )}
-              {feedback && (
-                <div className="flex justify-end">
-                  <Button onClick={closeModal}>Close</Button>
-                </div>
+
+            <div className="p-6 space-y-6">
+              {currentExercise.multi_question ? (
+                !feedback ? (
+                  <div className="space-y-6">
+                    {currentExercise.questions.map((q, idx) => (
+                      <div key={idx} className="border-b pb-4 last:border-b-0 dark:border-slate-700">
+                        <p className={`text-lg font-medium mb-2 ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                          {idx+1}. {q.text}
+                        </p>
+                        <textarea
+                          rows="2"
+                          placeholder="Your answer..."
+                          value={multiAnswers[idx]}
+                          onChange={(e) => handleMultiAnswerChange(idx, e.target.value)}
+                          className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
+                            darkMode ? "bg-slate-800 border-slate-600 text-white placeholder:text-slate-400" : "bg-white border-slate-300 text-black"
+                          }`}
+                        />
+                      </div>
+                    ))}
+                    <div className="flex justify-end gap-3">
+                      <Button variant="outline" onClick={closeModal}>Cancel</Button>
+                      <Button onClick={handleSubmitMulti} disabled={submitting}>
+                        {submitting ? "Submitting..." : "Submit All Answers"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="space-y-6">
+                      {feedback.results.map((res, idx) => (
+                        <div key={idx} className={`p-4 rounded-xl border ${res.correct ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-red-500 bg-red-50 dark:bg-red-900/20'}`}>
+                          <p className="font-bold">{idx+1}. {res.question}</p>
+                          <p className="mt-1 text-sm">Your answer: <span className={res.correct ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}>{res.user_answer || "(empty)"}</span></p>
+                          <p className="mt-1 text-sm">Correct answer: <span className="font-semibold">{res.correct_answer}</span></p>
+                          {res.explanation && <p className="mt-1 text-sm text-slate-500">{res.explanation}</p>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className={`mt-6 p-4 rounded-xl border ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`}>
+                      <p className="font-bold">Results: {feedback.total_correct}/{feedback.total_questions} correct</p>
+                      <p className="mt-2 text-sm">
+                        {formatXP(feedback.xp_earned)} XP
+                        {feedback.gems_earned > 0 ? `, +${feedback.gems_earned} gems` : ""}
+                      </p>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                      <Button onClick={closeModal}>Close</Button>
+                    </div>
+                  </div>
+                )
+              ) : (
+                !feedback ? (
+                  <div>
+                    <p className={`text-lg ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                      {currentExercise.question}
+                    </p>
+                    <textarea
+                      rows="3"
+                      placeholder="Your answer..."
+                      value={singleAnswer}
+                      onChange={(e) => setSingleAnswer(e.target.value)}
+                      className={`w-full border rounded-xl px-4 py-2 mt-4 outline-none focus:ring-2 focus:ring-cyan-500 ${
+                        darkMode ? "bg-slate-800 border-slate-600 text-white placeholder:text-slate-400" : "bg-white border-slate-300 text-black"
+                      }`}
+                    />
+                    <div className="flex justify-end gap-3 mt-4">
+                      <Button variant="outline" onClick={closeModal}>Cancel</Button>
+                      <Button onClick={handleSubmitSingle} disabled={submitting}>
+                        {submitting ? "Submitting..." : "Submit Answer"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className={`p-4 rounded-xl ${feedback.correct ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"}`}>
+                      <p className="font-bold">{feedback.correct ? "✓ Correct!" : "✗ Incorrect"}</p>
+                      <p className="mt-1">Correct answer: {feedback.correct_answer}</p>
+                      <p className="mt-1">{feedback.explanation}</p>
+                      <p className="mt-2 text-sm">
+                        {formatXP(feedback.xp_earned)} XP
+                        {!isRevision && feedback.gems_earned > 0 ? `, +${feedback.gems_earned} gems` : ""}
+                      </p>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                      <Button onClick={closeModal}>Close</Button>
+                    </div>
+                  </div>
+                )
               )}
             </div>
           </div>
