@@ -9,15 +9,17 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [fileUrl, setFileUrl] = useState("");
+  const [fileExtension, setFileExtension] = useState("");
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const response = await api.get("/student/courses");
-        setCourses(response.data); // Tous les cours, pas de slice
+        setCourses(response.data);
       } catch (err) {
-        setError("Impossible de charger les cours.");
-        console.error(err);
+        setError("Unable to load courses.");
       } finally {
         setLoading(false);
       }
@@ -25,53 +27,67 @@ export default function CoursesPage() {
     fetchCourses();
   }, []);
 
+  const openCourseFile = (course) => {
+    if (course.file_url) {
+      // Construct full URL
+      const fullUrl = `${api.defaults.baseURL}${course.file_url}`;
+      setFileUrl(fullUrl);
+      setFileExtension(course.file_extension);
+      setSelectedCourse(course.id);
+    } else {
+      alert("No file attached to this course.");
+    }
+  };
+
+  const closeModal = () => {
+    setSelectedCourse(null);
+    setFileUrl("");
+    setFileExtension("");
+  };
+
   if (loading) return <Loader />;
-  if (error) return <div className={`text-center ${darkMode ? "text-red-400" : "text-red-500"}`}>{error}</div>;
+  if (error) return <div className="text-center text-red-500">{error}</div>;
 
   return (
     <div>
-      <h1 className={`text-3xl font-extrabold ${darkMode ? "text-white" : "text-slate-900"}`}>
-        Courses
-      </h1>
-      <p className={`mt-2 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-        Consult your available courses and continue learning.
-      </p>
+      <h1 className="text-3xl font-extrabold">Courses</h1>
+      <p className="mt-2">Browse your available courses and open the materials.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
         {courses.map((course) => (
           <Card key={course.id}>
-            <h2 className={`text-xl font-extrabold ${darkMode ? "text-white" : "text-slate-900"}`}>
-              {course.title}
-            </h2>
-            <p className={`mt-2 text-sm ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-              {course.description}
-            </p>
-            <div className="mt-5">
-              <div className="flex justify-between text-sm font-semibold">
-                <span className={darkMode ? "text-slate-300" : "text-slate-700"}>Your Score</span>
-                <span className={darkMode ? "text-white" : "text-slate-900"}>
-                  {course.user_score !== undefined ? `${course.user_score}%` : "—"}
-                </span>
-              </div>
-              {course.user_score !== undefined && (
-                <div className="h-3 bg-slate-100 rounded-full mt-2">
-                  <div
-                    className="h-3 bg-blue-600 rounded-full"
-                    style={{ width: `${course.user_score}%` }}
-                  />
-                </div>
-              )}
-            </div>
-            <button className="mt-5 text-blue-600 font-bold hover:text-blue-700 transition">
+            <h2 className="text-xl font-extrabold">{course.title}</h2>
+            <p className="mt-2 text-sm">{course.description}</p>
+            <button
+              onClick={() => openCourseFile(course)}
+              className="mt-5 w-full bg-blue-600 text-white font-bold py-2 rounded-xl hover:bg-blue-700 transition"
+            >
               Open course
             </button>
           </Card>
         ))}
       </div>
 
-      {courses.length === 0 && !loading && (
-        <div className={`text-center mt-10 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
-          No courses available at the moment.
+      {selectedCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold dark:text-white">Course material</h2>
+              <button onClick={closeModal} className="text-red-500 text-2xl">&times;</button>
+            </div>
+            <div className="flex-1 p-2 overflow-auto">
+              {fileExtension === "pdf" ? (
+                <iframe src={fileUrl} className="w-full h-[80vh]" title="PDF Viewer" />
+              ) : (
+                <div className="text-center py-10">
+                  <p className="mb-4">This file type (.{fileExtension}) cannot be previewed.</p>
+                  <a href={fileUrl} download className="bg-blue-600 text-white px-4 py-2 rounded-xl">
+                    Download file
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

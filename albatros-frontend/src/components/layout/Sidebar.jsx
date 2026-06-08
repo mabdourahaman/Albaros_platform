@@ -9,7 +9,8 @@ import {
   Settings,
   FilePlus,
   GraduationCap,
-  Clock
+  Clock,
+  FileText
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 
@@ -20,7 +21,7 @@ export default function Sidebar({ role, onLinkClick }) {   // ← onLinkClick aj
     student: [
       { label: t.dashboard, to: "/student", icon: LayoutDashboard },
       { label: t.courses, to: "/student/courses", icon: BookOpen },
-      { label: t.quiz, to: "/student/quiz", icon: ClipboardList },
+      { label: t.quiz, to: "/student/quizzes", icon: ClipboardList },
       { label: t.exercises, to: "/student/exercises", icon: FilePlus },
       { label: t.recommendations, to: "/student/recommendations", icon: GraduationCap },
       { label: t.progress, to: "/student/progress", icon: BarChart3 },
@@ -30,10 +31,11 @@ export default function Sidebar({ role, onLinkClick }) {   // ← onLinkClick aj
     teacher: [
       { label: t.dashboard, to: "/teacher", icon: LayoutDashboard },
       { label: t.courses, to: "/teacher/courses", icon: BookOpen },
-      { label: t.addCourse, to: "/teacher/courses/add", icon: FilePlus },
-      { label: t.addExercise, to: "/teacher/exercises/add", icon: ClipboardList },
+      { label: "Exercices", to: "/teacher/exercises", icon: ClipboardList },
+      { label: "Quiz", to: "/teacher/quizzes", icon: GraduationCap },
       { label: t.students, to: "/teacher/students", icon: Users },
       { label: t.monitoring, to: "/teacher/monitoring", icon: BarChart3 },
+
     ],
 
     admin: [
@@ -41,7 +43,7 @@ export default function Sidebar({ role, onLinkClick }) {   // ← onLinkClick aj
       { label: t.users, to: "/admin/users", icon: Users },
       { label: t.pendingUsers, to: "/admin/pending-users", icon: Clock },
       { label: t.subjects, to: "/admin/subjects", icon: BookOpen },
-      { label: t.content, to: "/admin/content", icon: Settings },
+      { label: t.content, to: "/admin/content", icon: FileText },
     ],
   };
 

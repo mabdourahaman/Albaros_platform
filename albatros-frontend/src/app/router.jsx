@@ -13,6 +13,7 @@ import ExercisesPage from "../features/student/pages/ExercisesPage";
 import RecommendationsPage from "../features/student/pages/RecommendationsPage";
 import ProgressPage from "../features/student/pages/ProgressPage";
 import ScoresHistoryPage from "../features/student/pages/ScoresHistoryPage";
+import StudentQuizzesPage from "../features/student/pages/StudentQuizzesPage";
 
 import TeacherDashboard from "../features/teacher/pages/TeacherDashboard";
 import ManageCoursesPage from "../features/teacher/pages/ManageCoursesPage";
@@ -20,6 +21,10 @@ import AddCoursePage from "../features/teacher/pages/AddCoursePage";
 import AddExercisePage from "../features/teacher/pages/AddExercisePage";
 import StudentStatsPage from "../features/teacher/pages/StudentStatsPage";
 import ProgressMonitoringPage from "../features/teacher/pages/ProgressMonitoringPage";
+// ... autres imports
+import ManageExercisesPage from "../features/teacher/pages/ManageExercisesPage";
+import ManageQuizzesPage from "../features/teacher/pages/ManageQuizzesPage";
+import AddQuizPage from "../features/teacher/pages/AddQuizPage";
 
 import AdminDashboard from "../features/admin/pages/AdminDashboard";
 import UserManagementPage from "../features/admin/pages/UserManagementPage";
@@ -39,7 +44,9 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <StudentDashboard /> },
       { path: "courses", element: <CoursesPage /> },
-      { path: "quiz/:id", element: <QuizPage /> },          // ← ici
+      // dans le tableau children de student :
+      { path: "quizzes", element: <StudentQuizzesPage /> },
+      { path: "quiz/:id", element: <QuizPage /> },
       { path: "exercises", element: <ExercisesPage /> },
       { path: "recommendations", element: <RecommendationsPage /> },
       { path: "progress", element: <ProgressPage /> },
@@ -57,7 +64,10 @@ export const router = createBrowserRouter([
       { path: "exercises/add", element: <AddExercisePage /> },
       { path: "students", element: <StudentStatsPage /> },
       { path: "monitoring", element: <ProgressMonitoringPage /> },
-    ],
+      { path: "exercises", element: <ManageExercisesPage /> },
+      { path: "quizzes", element: <ManageQuizzesPage /> },
+      { path: "quizzes/add", element: <AddQuizPage /> },
+          ],
   },
 
   {

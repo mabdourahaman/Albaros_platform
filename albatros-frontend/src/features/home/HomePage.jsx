@@ -7,11 +7,13 @@ import {
   GraduationCap,
   ArrowRight,
   Menu,
+  X,
 } from "lucide-react";
 import heroImage from "../../assets/home_page_pic.jpg";
 
 export default function HomePage() {
   const { language, darkMode, setLanguage } = useSettings();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const content = {
     en: {
@@ -90,6 +92,8 @@ export default function HomePage() {
 
   const t = content[language];
 
+  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
+
   return (
     <main
       dir={language === "ar" ? "rtl" : "ltr"}
@@ -102,11 +106,8 @@ export default function HomePage() {
           darkMode ? "bg-slate-950" : "bg-white"
         }`}
       >
-        <nav className="h-20 flex items-center justify-between">
-          <Link
-            to="/"
-            className="h-full px-6 md:px-10 flex items-center gap-3"
-          >
+        <nav className="h-20 flex items-center justify-between px-4 md:px-6">
+          <Link to="/" className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-lg bg-cyan-500 text-white flex items-center justify-center">
               <GraduationCap size={28} />
             </div>
@@ -115,7 +116,8 @@ export default function HomePage() {
             </span>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-10 font-bold uppercase text-sm tracking-wide">
+          {/* Navigation desktop : liens + boutons */}
+          <div className="hidden lg:flex items-center gap-8 font-bold uppercase text-sm tracking-wide">
             <a href="#home" className="text-cyan-500">
               {t.home}
             </a>
@@ -137,15 +139,11 @@ export default function HomePage() {
             >
               {t.contact}
             </a>
-          </div>
 
-          <div className="flex items-center h-full gap-2">
-            <SettingsControls />
-
-            {/* Login button - secondary style */}
+            {/* Boutons Login/Register dans la barre desktop */}
             <Link
               to="/login"
-              className={`hidden md:flex items-center px-6 py-2 rounded-xl font-bold transition ${
+              className={`px-4 py-2 rounded-xl font-bold transition ${
                 darkMode
                   ? "bg-slate-800 text-white hover:bg-slate-700"
                   : "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50"
@@ -153,39 +151,113 @@ export default function HomePage() {
             >
               {t.login}
             </Link>
-
-            {/* Register button - primary style */}
             <Link
               to="/register"
-              className="hidden md:flex items-center px-6 py-2 rounded-xl bg-cyan-500 text-white font-bold hover:bg-cyan-600 transition"
+              className="px-4 py-2 rounded-xl bg-cyan-500 text-white font-bold hover:bg-cyan-600 transition"
             >
               {t.register}
-              <ArrowRight size={18} className="ml-2" />
+              <ArrowRight size={16} className="ml-1 inline" />
             </Link>
+          </div>
 
-            <button className="lg:hidden px-5">
-              <Menu size={28} />
+          {/* Zone droite pour mobile : seulement l'icône menu et le sélecteur de langue (optionnel) */}
+          <div className="flex items-center gap-2">
+            <SettingsControls />
+
+            <button
+              onClick={toggleMobileMenu}
+              className="lg:hidden p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </nav>
 
-        <div className="md:hidden px-4 pb-4">
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className={`w-full px-4 py-3 rounded-xl border outline-none ${
-              darkMode
-                ? "bg-slate-900 border-slate-700 text-white"
-                : "bg-white border-slate-200 text-slate-700"
-            }`}
-          >
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-            <option value="ar">العربية</option>
-          </select>
-        </div>
+        {/* Menu mobile (tiroir) - contient liens + boutons */}
+        {mobileMenuOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={toggleMobileMenu}
+            />
+            <div
+              className={`fixed top-20 left-0 right-0 z-50 shadow-lg p-5 flex flex-col gap-4 lg:hidden ${
+                darkMode ? "bg-slate-900" : "bg-white"
+              }`}
+            >
+              <a
+                href="#home"
+                onClick={toggleMobileMenu}
+                className="text-cyan-500 font-bold py-2 text-lg"
+              >
+                {t.home}
+              </a>
+              <a
+                href="#about"
+                onClick={toggleMobileMenu}
+                className={`py-2 text-lg ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+              >
+                {t.about}
+              </a>
+              <a
+                href="#courses"
+                onClick={toggleMobileMenu}
+                className={`py-2 text-lg ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+              >
+                {t.courses}
+              </a>
+              <a
+                href="#contact"
+                onClick={toggleMobileMenu}
+                className={`py-2 text-lg ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+              >
+                {t.contact}
+              </a>
+
+              <div className="h-px bg-slate-200 dark:bg-slate-700 my-2" />
+
+              <Link
+                to="/login"
+                onClick={toggleMobileMenu}
+                className={`block text-center px-4 py-3 rounded-xl font-bold transition ${
+                  darkMode
+                    ? "bg-slate-800 text-white hover:bg-slate-700"
+                    : "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                {t.login}
+              </Link>
+              <Link
+                to="/register"
+                onClick={toggleMobileMenu}
+                className="block text-center px-4 py-3 rounded-xl bg-cyan-500 text-white font-bold hover:bg-cyan-600 transition"
+              >
+                {t.register}
+                <ArrowRight size={16} className="ml-1 inline" />
+              </Link>
+
+              <div className="pt-2">
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border outline-none ${
+                    darkMode
+                      ? "bg-slate-800 border-slate-700 text-white"
+                      : "bg-white border-slate-200 text-slate-700"
+                  }`}
+                >
+                  <option value="en">English</option>
+                  <option value="fr">Français</option>
+                  <option value="ar">العربية</option>
+                </select>
+              </div>
+            </div>
+          </>
+        )}
       </header>
 
+      {/* Section hero et about - inchangées */}
       <section
         id="home"
         className="relative min-h-screen flex items-center pt-20 overflow-hidden"

@@ -1,4 +1,4 @@
-# course_parser/content_manager.py
+# content_manager.py - FIXED
 import hashlib
 import json
 import tempfile
@@ -8,10 +8,11 @@ from typing import List, Dict, Optional
 from docx_parser import extraire_texte_docx, separer_cours_exercices
 from ollama_utils import call_ollama, parser_questions_robuste
 
-# Import des modèles Flask (à adapter selon votre structure)
+# FIX: import db correctly
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models import Quiz, Question, db
+from db import db
+from models import Quiz, Question
 
 def charger_document_et_creer_quiz(chemin_fichier: str, titre_quiz: str, subject_id: int,
                                    difficulte: str = "medium", teacher_id: Optional[int] = None) -> int:

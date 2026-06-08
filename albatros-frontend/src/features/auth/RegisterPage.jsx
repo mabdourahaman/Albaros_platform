@@ -213,7 +213,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <input
             name="massar"
-            type="number"
+            type="text"
             placeholder={t.massar}
             value={form.massar}
             onChange={handleChange}
