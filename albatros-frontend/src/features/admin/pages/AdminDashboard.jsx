@@ -1,3 +1,4 @@
+// AdminDashboard.jsx – version mise à jour (anglais, cartes cliquables)
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, FileText, Users, Clock } from "lucide-react";
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
         });
       } catch (err) {
         console.error(err);
-        setError("Impossible de charger les statistiques.");
+        setError("Unable to load statistics.");
       } finally {
         setLoading(false);
       }
@@ -34,7 +35,7 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  if (loading) return <div className={`text-center py-10 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>Chargement...</div>;
+  if (loading) return <div className={`text-center py-10 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>Loading...</div>;
   if (error) return <div className="text-red-500 text-center">{error}</div>;
 
   return (
@@ -47,12 +48,27 @@ export default function AdminDashboard() {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
-        <StatsCard title="Users" value={stats.users} icon={<Users />} />
-        <StatsCard title="Subjects" value={stats.subjects} icon={<BookOpen />} />
-        <StatsCard title="Content Items" value={stats.content} icon={<FileText />} />
+        <StatsCard
+          title="Users"
+          value={stats.users}
+          icon={<Users />}
+          onClick={() => navigate("/admin/users")}
+        />
+        <StatsCard
+          title="Subjects"
+          value={stats.subjects}
+          icon={<BookOpen />}
+          onClick={() => navigate("/admin/subjects")}
+        />
+        <StatsCard
+          title="Content Items"
+          value={stats.content}
+          icon={<FileText />}
+          onClick={() => navigate("/admin/content")}
+        />
       </div>
 
-      {/* Carte d’accès rapide - inscriptions en attente */}
+      {/* Pending Approvals block – same style as before */}
       <div className={`mt-8 rounded-2xl p-5 flex items-center justify-between ${
         darkMode ? "bg-blue-950 border border-blue-800" : "bg-blue-50 border border-blue-200"
       }`}>
@@ -60,10 +76,10 @@ export default function AdminDashboard() {
           <Clock size={28} className="text-blue-600" />
           <div>
             <h3 className={`font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
-              Pending Registrations
+              Pending Approvals
             </h3>
             <p className={`text-sm ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-              Validate or reject new user accounts
+              Approve or reject new account registrations
             </p>
           </div>
         </div>

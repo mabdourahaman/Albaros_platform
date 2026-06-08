@@ -14,22 +14,23 @@ export default function DashboardLayout({ role }) {
 
   return (
     <div
-      className={`min-h-screen flex ${
+      className={`min-h-screen ${
         darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"
       }`}
     >
-      {/* Sidebar for desktop */}
-      <div className="hidden lg:block">
+      {/* Sidebar for desktop - fixed, ne défile pas avec la page */}
+      <div className="hidden lg:block fixed inset-y-0 left-0 z-30 w-72">
         <Sidebar role={role} />
       </div>
 
-      {/* Mobile sidebar overlay */}
+      {/* Overlay mobile */}
       {mobileMenuOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={closeMobileMenu}
         />
       )}
+      {/* Sidebar mobile - fixed également */}
       <div
         className={`fixed top-0 left-0 z-50 h-full transform transition-transform duration-300 lg:hidden ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
@@ -38,9 +39,10 @@ export default function DashboardLayout({ role }) {
         <Sidebar role={role} onLinkClick={closeMobileMenu} />
       </div>
 
-      <div className="flex-1 min-w-0">
+      {/* Contenu principal avec marge gauche sur desktop pour éviter le recouvrement */}
+      <div className="lg:ml-72 min-h-screen flex flex-col">
         <Navbar role={role} onMenuClick={toggleMobileMenu} />
-        <main className="p-4 md:p-6 lg:p-8">
+        <main className="flex-1 p-4 md:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

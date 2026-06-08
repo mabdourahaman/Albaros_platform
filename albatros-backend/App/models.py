@@ -1,6 +1,5 @@
 # models.py
 from datetime import datetime
-from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import db
 from sqlalchemy.orm import relationship
@@ -9,7 +8,7 @@ from sqlalchemy.orm import relationship
 class PendingUser(db.Model):
     __tablename__ = 'pending_users'
     id = db.Column(db.Integer, primary_key=True)
-    massar = db.Column(db.Integer, unique=True, nullable=False)
+    massar = db.Column(db.String(20), unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -25,11 +24,11 @@ class PendingUser(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-class User(UserMixin, db.Model):
+class User(db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    massar = db.Column(db.Integer, unique=True, nullable=False)
+    massar = db.Column(db.String(20), unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -65,6 +64,17 @@ class User(UserMixin, db.Model):
             'gems': self.gems,
             'total_xp': self.total_xp
         }
+    
+class PasswordReset(db.Model):
+    __tablename__ = 'password_resets'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    code = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    used = db.Column(db.Boolean, default=False)
+
+    user = db.relationship('User', backref='password_resets')
 
 class InventoryItem(db.Model):
     __tablename__ = 'inventory_items'
@@ -122,19 +132,27 @@ class Subject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(200))
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # ← nouveau
 
+    teacher = relationship('User', backref='taught_subjects')  # ← relation
+    
 class Course(db.Model):
     __tablename__ = 'courses'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))
-    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     difficulty = db.Column(db.String(20))
     content_url = db.Column(db.String(300))
-    subject = relationship('Subject', backref='courses')
+    content = db.Column(db.Text, nullable=True)
+    examples = db.Column(db.Text, nullable=True)
     tags = db.Column(db.String(200))
+    file_path = db.Column(db.String(300), nullable=True)
 
+    subject = db.relationship('Subject', backref='courses')
+    teacher = db.relationship('User', foreign_keys=[teacher_id], backref='courses')   # <-- AJOUT
+    
 class Exercise(db.Model):
     __tablename__ = 'exercises'
     id = db.Column(db.Integer, primary_key=True)
@@ -143,6 +161,7 @@ class Exercise(db.Model):
     correct_answer = db.Column(db.String(200), nullable=False)
     explanation = db.Column(db.Text)
     difficulty = db.Column(db.String(20))
+    xp_reward = db.Column(db.Integer, default=20)
     tags = db.Column(db.String(200))
 
 class Quiz(db.Model):
@@ -183,3 +202,17 @@ class Gap(db.Model):
     concept = db.Column(db.String(100))
     mastery_level = db.Column(db.Float, default=0.0)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+
+class UserExercise(db.Model):
+    __tablename__ = 'user_exercises'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'))
+    completed = db.Column(db.Boolean, default=False)       # première fois terminé
+    revision_attempts = db.Column(db.Integer, default=0)    # nombre de fois révisé
+    last_review_date = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    user = db.relationship('User', backref='user_exercises')
+    exercise = db.relationship('Exercise', backref='user_exercises')

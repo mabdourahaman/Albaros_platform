@@ -121,7 +121,7 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="mt-6 space-y-4">
           <input
             name="massar"
-            type="number"
+            type="text"
             placeholder={t.massar}
             className={`w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500 ${
               darkMode
