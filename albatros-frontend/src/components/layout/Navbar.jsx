@@ -38,7 +38,6 @@ export default function Navbar({ role, onMenuClick }) {
     navigate(`/${role}/settings`);
   }
 
-  const avatarLetter = user.username ? user.username.charAt(0).toUpperCase() : "A";
 
   return (
     <header className={`h-20 border-b flex items-center justify-between px-4 md:px-8 ${darkMode ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-100 text-slate-900"}`}>

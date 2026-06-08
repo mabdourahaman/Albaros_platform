@@ -27,7 +27,7 @@ const translations = {
     welcomeBack: "Welcome back",
     weakTopics: "Weak Topics",
     reviewNow: "Review now",
-    pendingUsers: "Pending Users",  // Ajouté
+    pendingUsers: "Pending Users", 
     addTeacher: "Add teacher",
   },
 
@@ -55,7 +55,7 @@ const translations = {
     welcomeBack: "Bon retour",
     weakTopics: "Points faibles",
     reviewNow: "Réviser maintenant",
-    pendingUsers: "Inscriptions en attente",  // Ajouté
+    pendingUsers: "Inscriptions en attente", 
     addTeacher: "Ajouter un enseignant",
   },
 
@@ -83,7 +83,7 @@ const translations = {
     welcomeBack: "مرحبا بعودتك",
     weakTopics: "نقاط الضعف",
     reviewNow: "راجع الآن",
-    pendingUsers: "المستخدمون المنتظرون",  // Ajouté
+    pendingUsers: "المستخدمون المنتظرون",  
     addTeacher: "إضافة أستاذ",
   },
 };

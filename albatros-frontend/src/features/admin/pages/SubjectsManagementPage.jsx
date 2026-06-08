@@ -42,7 +42,7 @@ export default function SubjectsManagementPage() {
 
   const fetchTeachers = async () => {
     try {
-      const res = await api.get("/admin/users"); // récupère tous les utilisateurs
+      const res = await api.get("/admin/users");
       const teacherList = res.data.filter((u) => u.role === "teacher");
       setTeachers(teacherList);
     } catch (err) {
@@ -118,7 +118,9 @@ export default function SubjectsManagementPage() {
             Manage school subjects and assign teachers.
           </p>
         </div>
-        <Button onClick={openCreateModal}>+ Add Subject</Button>
+        <Button onClick={openCreateModal} className="min-h-[42px] flex items-center justify-center">
+          + Add Subject
+        </Button>
       </div>
 
       {subjects.length === 0 ? (
@@ -129,21 +131,23 @@ export default function SubjectsManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {subjects.map((subject) => (
             <div key={subject.id} className="min-w-[300px] max-w-[400px] w-full mx-auto">
-              <Card>
-                <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-slate-900"}`}>
-                  {subject.name}
-                </h3>
-                <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-                  {subject.description || "No description"}
-                </p>
-                <p className="text-sm text-slate-500 mt-1">
-                  Teacher: {subject.teacher_name || "Not assigned"}
-                </p>
+              <Card className="flex flex-col justify-between">
+                <div>
+                  <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    {subject.name}
+                  </h3>
+                  <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                    {subject.description || "No description"}
+                  </p>
+                  <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                    Teacher: {subject.teacher_name || "Not assigned"}
+                  </p>
+                </div>
                 <div className="mt-4 flex justify-between gap-4">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-center"
+                    className="flex-1 text-center min-h-[42px] flex items-center justify-center"
                     onClick={() => openEditModal(subject)}
                   >
                     Edit
@@ -151,7 +155,7 @@ export default function SubjectsManagementPage() {
                   <Button
                     variant="danger"
                     size="sm"
-                    className="flex-1 text-center"
+                    className="flex-1 text-center min-h-[42px] flex items-center justify-center"
                     onClick={() => handleDelete(subject.id)}
                   >
                     Delete
@@ -178,7 +182,7 @@ export default function SubjectsManagementPage() {
                 value={form.name}
                 onChange={handleChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
                 required
               />
@@ -189,7 +193,7 @@ export default function SubjectsManagementPage() {
                 value={form.description}
                 onChange={handleChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
               />
               <select
@@ -197,7 +201,7 @@ export default function SubjectsManagementPage() {
                 value={form.teacher_id}
                 onChange={handleChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
               >
                 <option value="">Assign a teacher (optional)</option>
@@ -208,8 +212,19 @@ export default function SubjectsManagementPage() {
                 ))}
               </select>
               <div className="flex justify-end gap-3 mt-4">
-                <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
-                <Button type="submit" disabled={modalLoading}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeModal}
+                  className="min-h-[42px] flex items-center justify-center"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={modalLoading}
+                  className="min-h-[42px] flex items-center justify-center"
+                >
                   {modalLoading ? "Saving..." : "Save"}
                 </Button>
               </div>

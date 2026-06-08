@@ -1,6 +1,6 @@
 # quiz_service.py - FINAL CORRECTED VERSION with gap-based exercise generation
 import json
-from datetime import date
+from datetime import date, timedelta
 from db import db
 from models import Gap, QuizResult, Question, UserQuestProgress, Quest, Exercise, UserExercise, Course
 from sqlalchemy import func
@@ -22,11 +22,15 @@ def get_or_create_gaps_course():
         db.session.commit()
     return course
 
+def get_week_start():
+    """Retourne le lundi de la semaine en cours."""
+    today = date.today()
+    return today - timedelta(days=today.weekday())
+
 # ---------------------------
 # QUEST PROGRESS HELPERS
 # ---------------------------
 def update_quest_progress(user_id, objective_type, increment=1):
-    from helpers import get_week_start
     week_start = get_week_start()
     progresses = UserQuestProgress.query.join(Quest).filter(
         UserQuestProgress.user_id == user_id,

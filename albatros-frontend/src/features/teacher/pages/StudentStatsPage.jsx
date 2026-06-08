@@ -34,9 +34,9 @@ export default function StudentStatsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className={`text-left border-b ${darkMode ? "border-slate-700" : "border-slate-100"}`}>
-              <th className="py-3">Name</th>
-              <th className="py-3">Email</th>
-              <th className="py-3">Progress</th>
+              <th className={`py-3 ${darkMode ? "text-slate-300" : "text-slate-600"}`}>Name</th>
+              <th className={`py-3 ${darkMode ? "text-slate-300" : "text-slate-600"}`}>Email</th>
+              <th className={`py-3 ${darkMode ? "text-slate-300" : "text-slate-600"}`}>Progress</th>
             </tr>
           </thead>
           <tbody>

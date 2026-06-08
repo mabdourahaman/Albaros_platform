@@ -100,7 +100,6 @@ def delete_course(course_id):
     user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
     course = Course.query.get_or_404(course_id)
-    print(f"DEBUG: user_id={user_id}, teacher_id={course.teacher_id}, user.role={user.role}")  # ← ajout
     if user.role != 'admin' and course.teacher_id != user_id:
         return jsonify({'msg': 'Unauthorized'}), 403
 
@@ -118,30 +117,60 @@ def delete_course(course_id):
 def get_teacher_exercises():
     user_id = int(get_jwt_identity())
     exercises = Exercise.query.join(Course).filter(Course.teacher_id == user_id).all()
-    return jsonify([{
-        "id": e.id,
-        "course_id": e.course_id,
-        "question_text": e.question_text,
-        "difficulty": e.difficulty,
-        "tags": e.tags
-    } for e in exercises]), 200
+    result = []
+    for e in exercises:
+        if e.questions:
+            # exercice multi‑questions
+            result.append({
+                "id": e.id,
+                "course_id": e.course_id,
+                "multi_question": True,
+                "questions": e.questions,
+                "difficulty": e.difficulty,
+                "xp_reward": e.xp_reward,
+                "tags": e.tags
+            })
+        else:
+            # ancien format
+            result.append({
+                "id": e.id,
+                "course_id": e.course_id,
+                "question_text": e.question_text,
+                "correct_answer": e.correct_answer,
+                "explanation": e.explanation,
+                "difficulty": e.difficulty,
+                "xp_reward": e.xp_reward,
+                "tags": e.tags
+            })
+    return jsonify(result), 200
 
 @teacher_bp.route('/exercises', methods=['POST'])
 @jwt_role_required('teacher', 'admin')
 def create_exercise():
-    user_id = int(get_jwt_identity())
+    user_id = int(get_jwt_identity())   # <-- correction ici
     data = request.get_json()
     course = Course.query.get(data.get('course_id'))
     if not course or course.teacher_id != user_id:
         return jsonify({'msg': 'Unauthorized'}), 403
-    exercise = Exercise(
-        course_id=data['course_id'],
-        question_text=data['question_text'],
-        correct_answer=data['correct_answer'],
-        explanation=data.get('explanation', ''),
-        difficulty=data.get('difficulty', 'easy'),
-        tags=data.get('tags', '')
-    )
+    
+    if data.get('multi_question'):
+        exercise = Exercise(
+            course_id=data['course_id'],
+            difficulty=data.get('difficulty', 'easy'),
+            xp_reward=data.get('xp_reward', 20),
+            tags=data.get('tags', ''),
+            questions=data['questions']   # stocké en JSON
+        )
+    else:
+        # ancien format
+        exercise = Exercise(
+            course_id=data['course_id'],
+            question_text=data['question_text'],
+            correct_answer=data['correct_answer'],
+            explanation=data.get('explanation', ''),
+            difficulty=data.get('difficulty', 'easy'),
+            tags=data.get('tags', '')
+        )
     db.session.add(exercise)
     db.session.commit()
     return jsonify({'msg': 'Exercise created', 'id': exercise.id}), 201
@@ -248,20 +277,55 @@ def api_upload_docx_create_quiz():
     finally:
         os.unlink(tmp_path)
 
-# ========== GESTION DES EXERCICES ==========
+# ========== GESTION DES EXERCICES (suppression, édition) ==========
 @teacher_bp.route('/exercises/<int:exercise_id>', methods=['DELETE'])
 @jwt_role_required('teacher', 'admin')
 def delete_exercise(exercise_id):
     user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
     exercise = Exercise.query.get_or_404(exercise_id)
-    # Vérifier que l'exercice appartient à un cours de l'enseignant
     course = Course.query.get(exercise.course_id)
     if user.role != 'admin' and course.teacher_id != user_id:
         return jsonify({'msg': 'Unauthorized'}), 403
     db.session.delete(exercise)
     db.session.commit()
     return jsonify({'msg': 'Exercise deleted'}), 200
+
+@teacher_bp.route('/exercises/<int:exercise_id>', methods=['GET'])
+@jwt_role_required('teacher', 'admin')
+def get_exercise(exercise_id):
+    user_id = int(get_jwt_identity())
+    exercise = Exercise.query.get_or_404(exercise_id)
+    course = Course.query.get(exercise.course_id)
+    if course.teacher_id != user_id:
+        return jsonify({'msg': 'Unauthorized'}), 403
+    return jsonify({
+        'id': exercise.id,
+        'course_id': exercise.course_id,
+        'question_text': exercise.question_text,
+        'correct_answer': exercise.correct_answer,
+        'explanation': exercise.explanation,
+        'difficulty': exercise.difficulty,
+        'tags': exercise.tags,
+    }), 200
+
+@teacher_bp.route('/exercises/<int:exercise_id>', methods=['PUT'])
+@jwt_role_required('teacher', 'admin')
+def update_exercise(exercise_id):
+    user_id = int(get_jwt_identity())
+    exercise = Exercise.query.get_or_404(exercise_id)
+    course = Course.query.get(exercise.course_id)
+    if course.teacher_id != user_id:
+        return jsonify({'msg': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    exercise.question_text = data.get('question_text', exercise.question_text)
+    exercise.correct_answer = data.get('correct_answer', exercise.correct_answer)
+    exercise.explanation = data.get('explanation', exercise.explanation)
+    exercise.difficulty = data.get('difficulty', exercise.difficulty)
+    exercise.tags = data.get('tags', exercise.tags)
+    db.session.commit()
+    return jsonify({'msg': 'Exercise updated'}), 200
 
 # ========== GESTION DES QUIZ ==========
 @teacher_bp.route('/quizzes', methods=['GET'])
@@ -321,7 +385,6 @@ def delete_quiz(quiz_id):
     quiz = Quiz.query.get_or_404(quiz_id)
     if user.role != 'admin' and quiz.teacher_id != user_id:
         return jsonify({'msg': 'Unauthorized'}), 403
-    # Supprimer les questions associées
     Question.query.filter_by(quiz_id=quiz_id).delete()
     db.session.delete(quiz)
     db.session.commit()
@@ -338,9 +401,7 @@ def update_quiz(quiz_id):
     quiz.title = data.get('title', quiz.title)
     quiz.subject_id = data.get('subject_id', quiz.subject_id)
     quiz.difficulty = data.get('difficulty', quiz.difficulty)
-    # Supprimer les anciennes questions
     Question.query.filter_by(quiz_id=quiz_id).delete()
-    # Ajouter les nouvelles
     for q in data.get('questions', []):
         question = Question(
             quiz_id=quiz_id,
@@ -373,7 +434,6 @@ def get_quiz(quiz_id):
         'option3': q.option3,
         'option4': q.option4,
         'correct_option': q.correct_option,
-        
     } for q in questions]
     return jsonify({
         'id': quiz.id,
@@ -383,45 +443,23 @@ def get_quiz(quiz_id):
         'questions': questions_data
     }), 200
 
-# Récupérer un exercice spécifique (pour édition)
-@teacher_bp.route('/exercises/<int:exercise_id>', methods=['GET'])
+# ========== GESTION DES COURS (édition) ==========
+@teacher_bp.route('/courses/<int:course_id>', methods=['PUT'])
 @jwt_role_required('teacher', 'admin')
-def get_exercise(exercise_id):
+def update_course(course_id):
     user_id = int(get_jwt_identity())
-    exercise = Exercise.query.get_or_404(exercise_id)
-    course = Course.query.get(exercise.course_id)
+    course = Course.query.get_or_404(course_id)
     if course.teacher_id != user_id:
         return jsonify({'msg': 'Unauthorized'}), 403
-    return jsonify({
-        'id': exercise.id,
-        'course_id': exercise.course_id,
-        'question_text': exercise.question_text,
-        'correct_answer': exercise.correct_answer,
-        'explanation': exercise.explanation,
-        'difficulty': exercise.difficulty,
-        'tags': exercise.tags,
-    }), 200
-
-# Mettre à jour un exercice
-@teacher_bp.route('/exercises/<int:exercise_id>', methods=['PUT'])
-@jwt_role_required('teacher', 'admin')
-def update_exercise(exercise_id):
-    user_id = int(get_jwt_identity())
-    exercise = Exercise.query.get_or_404(exercise_id)
-    course = Course.query.get(exercise.course_id)
-    if course.teacher_id != user_id:
-        return jsonify({'msg': 'Unauthorized'}), 403
-
+    
     data = request.get_json()
-    exercise.question_text = data.get('question_text', exercise.question_text)
-    exercise.correct_answer = data.get('correct_answer', exercise.correct_answer)
-    exercise.explanation = data.get('explanation', exercise.explanation)
-    exercise.difficulty = data.get('difficulty', exercise.difficulty)
-    exercise.tags = data.get('tags', exercise.tags)
-    # Si vous voulez permettre de changer le cours associé
-    # exercise.course_id = data.get('course_id', exercise.course_id)
+    course.title = data.get('title', course.title)
+    course.description = data.get('description', course.description)
+    course.subject_id = data.get('subject_id', course.subject_id)
+    course.difficulty = data.get('difficulty', course.difficulty)
+    course.tags = data.get('tags', course.tags)
     db.session.commit()
-    return jsonify({'msg': 'Exercise updated'}), 200
+    return jsonify({'msg': 'Course updated'}), 200
 
 @teacher_bp.route('/courses/<int:course_id>', methods=['GET'])
 @jwt_role_required('teacher', 'admin')

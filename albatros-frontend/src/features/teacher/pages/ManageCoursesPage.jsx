@@ -14,7 +14,6 @@ export default function ManageCoursesPage() {
   const [error, setError] = useState("");
   const [subjects, setSubjects] = useState([]);
 
-  // États pour le modal d'édition
   const [editingCourse, setEditingCourse] = useState(null);
   const [editForm, setEditForm] = useState({
     title: "",
@@ -41,7 +40,7 @@ export default function ManageCoursesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const fetchSubjects = async () => {
     try {
@@ -105,11 +104,7 @@ export default function ManageCoursesPage() {
     } finally {
       setModalLoading(false);
     }
-  }
-
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+  };
 
   if (loading) return <Loader />;
   if (error) return <div className="text-red-500 text-center">{error}</div>;
@@ -125,7 +120,12 @@ export default function ManageCoursesPage() {
             Manage the courses you have created.
           </p>
         </div>
-        <Button onClick={() => navigate("/teacher/courses/add")}>+ Add</Button>
+        <Button
+          onClick={() => navigate("/teacher/courses/add")}
+          className="min-h-[42px] flex items-center justify-center"
+        >
+          + Add
+        </Button>
       </div>
 
       {courses.length === 0 ? (
@@ -136,25 +136,43 @@ export default function ManageCoursesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {courses.map((course) => (
             <div key={course.id} className="min-w-[300px] max-w-[400px] w-full mx-auto">
-              <Card>
-                <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-slate-900"}`}>
-                  {course.title}
-                </h3>
-                <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-                  {course.description}
-                </p>
-                <p className="text-sm text-slate-500 mt-1">Subject ID: {course.subject_id}</p>
-                <p className="text-sm mt-1">
-                  Difficulty: <span className="capitalize">{course.difficulty}</span>
-                </p>
+              <Card className="flex flex-col justify-between h-full">
+                <div>
+                  <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    {course.title}
+                  </h3>
+                  <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                    {course.description}
+                  </p>
+                  <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                    Subject ID: {course.subject_id}
+                  </p>
+                  <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                    Difficulty: <span className="capitalize">{course.difficulty}</span>
+                  </p>
                   {course.file_path && (
                     <p className="text-xs text-green-500 mt-1 truncate" title={course.file_path.split('/').pop()}>
                       ✓ {course.file_path.split('/').pop()}
                     </p>
                   )}
+                </div>
                 <div className="mt-4 flex justify-between gap-4">
-                  <Button variant="outline" size="sm" className="flex-1 text-center" onClick={() => openEditModal(course)}>Edit</Button>
-                  <Button variant="danger" size="sm" className="flex-1 text-center" onClick={() => handleDelete(course.id)}>Delete</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-center min-h-[42px] flex items-center justify-center"
+                    onClick={() => openEditModal(course)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="flex-1 text-center min-h-[42px] flex items-center justify-center"
+                    onClick={() => handleDelete(course.id)}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </Card>
             </div>
@@ -177,7 +195,7 @@ export default function ManageCoursesPage() {
                 value={editForm.title}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
                 required
               />
@@ -189,7 +207,7 @@ export default function ManageCoursesPage() {
                 value={editForm.description}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
               />
 
@@ -198,7 +216,7 @@ export default function ManageCoursesPage() {
                 value={editForm.subject_id}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
                 required
               >
@@ -215,7 +233,7 @@ export default function ManageCoursesPage() {
                 value={editForm.difficulty}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
               >
                 <option value="easy">Easy</option>
@@ -230,13 +248,24 @@ export default function ManageCoursesPage() {
                 value={editForm.tags}
                 onChange={handleEditChange}
                 className={`w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-cyan-500 ${
-                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300"
+                  darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300 text-black"
                 }`}
               />
 
               <div className="flex justify-end gap-3 mt-4">
-                <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
-                <Button type="submit" disabled={modalLoading}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeModal}
+                  className="min-h-[42px] flex items-center justify-center"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={modalLoading}
+                  className="min-h-[42px] flex items-center justify-center"
+                >
                   {modalLoading ? "Saving..." : "Save changes"}
                 </Button>
               </div>

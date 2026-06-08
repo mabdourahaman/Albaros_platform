@@ -14,7 +14,6 @@ export default function ContentManagementPage() {
   const [activeTab, setActiveTab] = useState("courses");
   const [message, setMessage] = useState("");
 
-  // États pour le modal de visualisation
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewItem, setViewItem] = useState(null);
   const [viewType, setViewType] = useState(null);
@@ -43,7 +42,6 @@ export default function ContentManagementPage() {
     }
   };
 
-  // Correction : utiliser les bons endpoints (pluriel)
   const handleDelete = async (type, id, title) => {
     if (!window.confirm(`Delete ${title} permanently?`)) return;
     let endpoint;
@@ -65,7 +63,6 @@ export default function ContentManagementPage() {
     setViewModalOpen(true);
     if (type === "quiz") {
       try {
-        // Cette route existe déjà (teacher/quizzes) avec JWT admin autorisé
         const res = await api.get(`/teacher/quizzes/${item.id}`);
         setQuizQuestions(res.data.questions || []);
       } catch (err) {
@@ -84,27 +81,44 @@ export default function ContentManagementPage() {
     setQuizQuestions([]);
   };
 
+  const getExercisePreview = (ex) => {
+    if (ex.multi_question && ex.questions && ex.questions.length > 0) {
+      return ex.questions[0].text.substring(0, 60);
+    }
+    return ex.question_text ? ex.question_text.substring(0, 60) : "No question text";
+  };
+
   const renderCourses = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
       {courses.map((course) => (
-        <Card key={course.id}>
-          <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-black"}`}>
-            {course.title}
-          </h3>
-          <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-gray-600"}`}>
-            {course.description || "No description"}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Subject ID: {course.subject_id}</p>
-          <p className="text-xs text-slate-500">Teacher: {course.teacher_name || "Unknown"}</p>
-          <p className="text-xs text-slate-500">Difficulty: {course.difficulty}</p>
-          {course.file_path && (
-            <p className="text-xs text-green-500 truncate">📎 {course.file_path.split("/").pop()}</p>
-          )}
+        <Card key={course.id} className="flex flex-col justify-between">
+          <div>
+            <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-black"}`}>
+              {course.title}
+            </h3>
+            <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-gray-600"}`}>
+              {course.description || "No description"}
+            </p>
+            <p className={`text-xs mt-1 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+              Subject ID: {course.subject_id}
+            </p>
+            <p className={`text-xs ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+              Teacher: {course.teacher_name || "Unknown"}
+            </p>
+            <p className={`text-xs ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+              Difficulty: {course.difficulty}
+            </p>
+            {course.file_path && (
+              <p className="text-xs text-green-500 truncate">
+                📎 {course.file_path.split("/").pop()}
+              </p>
+            )}
+          </div>
           <div className="mt-4 flex justify-between gap-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => openViewModal("course", course)}>
+            <Button variant="outline" size="sm" className="flex-1 text-center min-h-[42px] flex items-center justify-center" onClick={() => openViewModal("course", course)}>
               View
             </Button>
-            <Button variant="danger" size="sm" className="flex-1" onClick={() => handleDelete("course", course.id, course.title)}>
+            <Button variant="danger" size="sm" className="flex-1 text-center min-h-[42px] flex items-center justify-center" onClick={() => handleDelete("course", course.id, course.title)}>
               Delete
             </Button>
           </div>
@@ -116,18 +130,28 @@ export default function ContentManagementPage() {
   const renderExercises = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
       {exercises.map((ex) => (
-        <Card key={ex.id}>
-          <h3 className={`font-bold text-lg line-clamp-2 ${darkMode ? "text-white" : "text-black"}`}>
-            {ex.question_text.substring(0, 60)}...
-          </h3>
-          <p className="text-sm text-slate-500 mt-1">Course ID: {ex.course_id}</p>
-          <p className="text-sm mt-1">Difficulty: {ex.difficulty}</p>
-          {ex.tags && <p className="text-xs text-slate-400 mt-1">Tags: {ex.tags}</p>}
+        <Card key={ex.id} className="flex flex-col justify-between">
+          <div>
+            <h3 className={`font-bold text-lg line-clamp-2 ${darkMode ? "text-white" : "text-black"}`}>
+              {getExercisePreview(ex)}...
+            </h3>
+            <p className={`text-sm text-slate-500 mt-1 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+              Course ID: {ex.course_id}
+            </p>
+            <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+              Difficulty: {ex.difficulty}
+            </p>
+            {ex.tags && (
+              <p className={`text-xs mt-1 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+                Tags: {ex.tags}
+              </p>
+            )}
+          </div>
           <div className="mt-4 flex justify-between gap-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => openViewModal("exercise", ex)}>
+            <Button variant="outline" size="sm" className="flex-1 text-center min-h-[42px] flex items-center justify-center" onClick={() => openViewModal("exercise", ex)}>
               View
             </Button>
-            <Button variant="danger" size="sm" className="flex-1" onClick={() => handleDelete("exercise", ex.id, `Exercise ${ex.id}`)}>
+            <Button variant="danger" size="sm" className="flex-1 text-center min-h-[42px] flex items-center justify-center" onClick={() => handleDelete("exercise", ex.id, `Exercise ${ex.id}`)}>
               Delete
             </Button>
           </div>
@@ -139,16 +163,26 @@ export default function ContentManagementPage() {
   const renderQuizzes = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
       {quizzes.map((quiz) => (
-        <Card key={quiz.id}>
-          <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-black"}`}>{quiz.title}</h3>
-          <p className="text-sm text-slate-500 mt-1">Subject ID: {quiz.subject_id}</p>
-          <p className="text-sm mt-1">Difficulty: {quiz.difficulty}</p>
-          <p className="text-sm mt-1">Questions: {quiz.question_count || 0}</p>
+        <Card key={quiz.id} className="flex flex-col justify-between">
+          <div>
+            <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-black"}`}>
+              {quiz.title}
+            </h3>
+            <p className={`text-sm text-slate-500 mt-1 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+              Subject ID: {quiz.subject_id}
+            </p>
+            <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+              Difficulty: {quiz.difficulty}
+            </p>
+            <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+              Questions: {quiz.question_count || 0}
+            </p>
+          </div>
           <div className="mt-4 flex justify-between gap-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => openViewModal("quiz", quiz)}>
+            <Button variant="outline" size="sm" className="flex-1 text-center min-h-[42px] flex items-center justify-center" onClick={() => openViewModal("quiz", quiz)}>
               View
             </Button>
-            <Button variant="danger" size="sm" className="flex-1" onClick={() => handleDelete("quiz", quiz.id, quiz.title)}>
+            <Button variant="danger" size="sm" className="flex-1 text-center min-h-[42px] flex items-center justify-center" onClick={() => handleDelete("quiz", quiz.id, quiz.title)}>
               Delete
             </Button>
           </div>
@@ -170,7 +204,6 @@ export default function ContentManagementPage() {
         </p>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 mb-6">
         {["courses", "exercises", "quizzes"].map((tab) => (
           <button
@@ -193,7 +226,7 @@ export default function ContentManagementPage() {
       {activeTab === "exercises" && renderExercises()}
       {activeTab === "quizzes" && renderQuizzes()}
 
-      {/* Modal de visualisation – version uniforme et corrigée */}
+      {/* Modal de visualisation (identique à la version précédente, déjà compatible sombre/clair) */}
       {viewModalOpen && viewItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
           <div className={`rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl ${darkMode ? "bg-slate-900" : "bg-white"}`}>
@@ -203,7 +236,7 @@ export default function ContentManagementPage() {
               {viewType === "quiz" && "Quiz Details"}
             </h2>
 
-            {/* COURS - maintenant en formulaire */}
+            {/* COURS */}
             {viewType === "course" && (
               <form className="space-y-4">
                 <div>
@@ -291,7 +324,7 @@ export default function ContentManagementPage() {
               </form>
             )}
 
-            {/* EXERCICE - inchangé mais avec bon support clair/sombre */}
+            {/* EXERCICE */}
             {viewType === "exercise" && (
               <form className="space-y-4">
                 <div>
@@ -308,7 +341,7 @@ export default function ContentManagementPage() {
                   <label className={`block text-sm font-medium mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Question</label>
                   <textarea
                     rows="4"
-                    value={viewItem.question_text}
+                    value={viewItem.question_text || (viewItem.questions ? JSON.stringify(viewItem.questions, null, 2) : "")}
                     readOnly
                     disabled
                     className={`w-full border rounded-xl px-4 py-2 ${darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-gray-100 border-gray-300 text-black"}`}
@@ -318,7 +351,7 @@ export default function ContentManagementPage() {
                   <label className={`block text-sm font-medium mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Correct Answer</label>
                   <input
                     type="text"
-                    value={viewItem.correct_answer}
+                    value={viewItem.correct_answer || ""}
                     readOnly
                     disabled
                     className={`w-full border rounded-xl px-4 py-2 ${darkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-gray-100 border-gray-300 text-black"}`}
@@ -357,7 +390,7 @@ export default function ContentManagementPage() {
               </form>
             )}
 
-            {/* QUIZ - corrigé pour mode clair (fonds, bordures, couleurs) */}
+            {/* QUIZ */}
             {viewType === "quiz" && (
               <form className="space-y-6">
                 <div>

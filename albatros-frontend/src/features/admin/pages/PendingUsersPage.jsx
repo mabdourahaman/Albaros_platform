@@ -60,7 +60,9 @@ export default function PendingUsersPage() {
     <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold">Pending Users</h1>
+          <h1 className={`text-3xl font-extrabold ${darkMode ? "text-white" : "text-slate-900"}`}>
+            Pending Users
+          </h1>
           <p className={darkMode ? "text-slate-400" : "text-slate-500"}>
             Review student and teacher registration requests.
           </p>
@@ -94,10 +96,14 @@ export default function PendingUsersPage() {
         }`}
       >
         {loading ? (
-          <div className="p-8 text-center font-bold">Loading...</div>
+          <div className={`p-8 text-center font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+            Loading...
+          </div>
         ) : pendingUsers.length === 0 ? (
           <div className="p-8 text-center">
-            <h2 className="text-xl font-extrabold">No pending users</h2>
+            <h2 className={`text-xl font-extrabold ${darkMode ? "text-white" : "text-slate-900"}`}>
+              No pending users
+            </h2>
             <p className={darkMode ? "text-slate-400" : "text-slate-500"}>
               All registration requests have been processed.
             </p>
@@ -131,12 +137,24 @@ export default function PendingUsersPage() {
                       darkMode ? "border-slate-800" : "border-slate-100"
                     }`}
                   >
-                    <td className="px-6 py-4 font-bold">{user.username}</td>
-                    <td className="px-6 py-4">{user.email}</td>
-                    <td className="px-6 py-4 capitalize">{user.role}</td>
-                    <td className="px-6 py-4">{user.massar || "-"}</td>
-                    <td className="px-6 py-4">{user.level || "-"}</td>
-                    <td className="px-6 py-4">{user.subject || "-"}</td>
+                    <td className={`px-6 py-4 font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                      {user.username}
+                    </td>
+                    <td className={`px-6 py-4 ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                      {user.email}
+                    </td>
+                    <td className={`px-6 py-4 capitalize ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                      {user.role}
+                    </td>
+                    <td className={`px-6 py-4 ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                      {user.massar || "-"}
+                    </td>
+                    <td className={`px-6 py-4 ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                      {user.level || "-"}
+                    </td>
+                    <td className={`px-6 py-4 ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                      {user.subject || "-"}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-3">
                         <button
@@ -145,7 +163,6 @@ export default function PendingUsersPage() {
                         >
                           Approve
                         </button>
-
                         <button
                           onClick={() => rejectUser(user.id)}
                           className="rounded-xl bg-red-500 px-4 py-2 text-white font-bold hover:bg-red-600 transition"

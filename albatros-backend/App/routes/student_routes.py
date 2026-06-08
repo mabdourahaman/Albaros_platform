@@ -13,7 +13,7 @@ from quiz_service import (
     map_difficulty_to_xp,
     get_weekly_quests
 )
-from helpers import update_streak_and_rewards
+from helpers import update_streak_and_rewards, compare_answers
 
 student_bp = Blueprint('student', __name__, url_prefix='/api/student')
 
@@ -26,19 +26,45 @@ def api_student_gaps():
 @student_bp.route('/exercises', methods=['GET'])
 @jwt_required()
 def api_student_exercises():
-    exercises = Exercise.query.order_by(Exercise.id.desc()).limit(20).all()
+    user_id = get_jwt_identity()
+    
+    # Récupérer les IDs des exercices déjà complétés
+    completed_ids = db.session.query(UserExercise.exercise_id).filter(
+        UserExercise.user_id == user_id,
+        UserExercise.completed == True
+    ).all()
+    completed_ids = [cid[0] for cid in completed_ids]
+    
+    query = Exercise.query
+    if completed_ids:
+        query = query.filter(Exercise.id.notin_(completed_ids))
+    exercises = query.order_by(Exercise.id.desc()).limit(30).all()
+    
     result = []
     for e in exercises:
         subject_id = None
-        if e.course and e.course.subject:
-            subject_id = e.course.subject.id
-        result.append({
-            "id": e.id,
-            "question": e.question_text,
-            "difficulty": e.difficulty,
-            "xp_reward": getattr(e, 'xp_reward', 20),
-            "subject_id": subject_id   # ← AJOUT
-        })
+        course = Course.query.get(e.course_id)
+        if course and course.subject:
+            subject_id = course.subject.id
+        
+        if e.questions:
+            result.append({
+                "id": e.id,
+                "multi_question": True,
+                "questions": e.questions,
+                "difficulty": e.difficulty,
+                "xp_reward": e.xp_reward,
+                "subject_id": subject_id
+            })
+        else:
+            result.append({
+                "id": e.id,
+                "multi_question": False,
+                "question": e.question_text,
+                "difficulty": e.difficulty,
+                "xp_reward": e.xp_reward,
+                "subject_id": subject_id
+            })
     return jsonify(result), 200
 
 @student_bp.route('/recommendations', methods=['GET'])
@@ -51,7 +77,7 @@ def api_student_recommendations():
         exercise = Exercise.query.get(ex["id"])
         subject_name = "General"
         if exercise:
-            course = Course.query.get(exercise.course_id)  # ← correction
+            course = Course.query.get(exercise.course_id)
             if course and course.subject:
                 subject_name = course.subject.name
         recommendations.append({
@@ -159,79 +185,163 @@ def api_claim_quest(progress_id):
 def api_student_revision_exercises():
     user_id = get_jwt_identity()
     exercises_data = generate_personalized_exercises(user_id, limit=5, revision=True)
-    # Récupérer les objets Exercise pour avoir subject_id
-    exercises = Exercise.query.filter(Exercise.id.in_([ex["id"] for ex in exercises_data])).all()
+    # exercises_data est une liste de dicts contenant "id"
+    exercise_ids = [ex["id"] for ex in exercises_data]
+    exercises = Exercise.query.filter(Exercise.id.in_(exercise_ids)).all()
     result = []
     for e in exercises:
         subject_id = None
-        if e.course and e.course.subject:
-            subject_id = e.course.subject.id
-        result.append({
-            "id": e.id,
-            "question": e.question_text,
-            "difficulty": e.difficulty,
-            "xp_reward": getattr(e, 'xp_reward', 20),
-            "subject_id": subject_id
-        })
+        course = Course.query.get(e.course_id)
+        if course and course.subject:
+            subject_id = course.subject.id
+        if e.questions:  # multi‑questions
+            result.append({
+                "id": e.id,
+                "multi_question": True,
+                "questions": e.questions,
+                "difficulty": e.difficulty,
+                "xp_reward": e.xp_reward,
+                "subject_id": subject_id
+            })
+        else:
+            result.append({
+                "id": e.id,
+                "multi_question": False,
+                "question": e.question_text,
+                "difficulty": e.difficulty,
+                "xp_reward": e.xp_reward,
+                "subject_id": subject_id
+            })
     return jsonify(result), 200
-
 @student_bp.route('/exercises/<int:exercise_id>/submit', methods=['POST'])
 @jwt_required()
 def api_submit_exercise(exercise_id):
     user_id = get_jwt_identity()
     data = request.get_json()
-    user_answer = data.get('answer', '').strip()
     is_revision = data.get('is_revision', False)
-
+    
     exercise = Exercise.query.get_or_404(exercise_id)
-    is_correct = (user_answer.lower() == exercise.correct_answer.lower())
-
-    base_xp = exercise.xp_reward if hasattr(exercise, 'xp_reward') else map_difficulty_to_xp(exercise.difficulty)
-
-    if not is_revision:
-        # Première tentative
-        user_ex = UserExercise.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
-        if user_ex and user_ex.completed:
-            return jsonify({'msg': 'Exercise already completed'}), 400
-        if not user_ex:
-            user_ex = UserExercise(user_id=user_id, exercise_id=exercise_id)
-            db.session.add(user_ex)
-
-        if is_correct:
-            user_ex.completed = True
-            xp_reward = base_xp
-            gems_reward = 2
+    
+    # ---------- Multi‑questions ----------
+    if exercise.questions:
+        answers = data.get('answers', [])
+        if len(answers) != len(exercise.questions):
+            return jsonify({'msg': 'Invalid number of answers'}), 400
+        
+        correct_count = 0
+        results = []
+        
+        for idx, q in enumerate(exercise.questions):
+            user_ans = answers[idx].strip()
+            is_correct, _ = compare_answers(user_ans, q['correct_answer'])
+            results.append({
+                'question': q['text'],
+                'user_answer': user_ans,
+                'correct': is_correct,
+                'correct_answer': q['correct_answer'],
+                'explanation': q.get('explanation', '')
+            })
+            if is_correct:
+                correct_count += 1
+        
+        base_xp = exercise.xp_reward
+        if correct_count == len(results):
+            xp_earned = base_xp
+            gems_earned = 2
+            completed = True
         else:
-            xp_reward = 5
-            gems_reward = 0
+            xp_earned = -3
+            gems_earned = 0
+            completed = False
+        
+        user_ex = UserExercise.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
+        if not is_revision:
+            if not user_ex:
+                user_ex = UserExercise(user_id=user_id, exercise_id=exercise_id)
+                db.session.add(user_ex)
+            if not user_ex.completed and xp_earned > 0:
+                user_ex.completed = True
+        else:
+            # En révision, on ne change pas le statut completed
+            if xp_earned > 0:
+                xp_earned = 5
+                gems_earned = 0
+        
+        user = User.query.get(user_id)
+        new_xp = (user.total_xp or 0) + xp_earned
+        if new_xp < 0:
+            new_xp = 0
+        user.total_xp = new_xp
+        user.gems = (user.gems or 0) + gems_earned
+        db.session.commit()
+        
+        update_quest_progress(user_id, 'exercises', 1 if not is_revision and xp_earned > 0 else 0)
+        if xp_earned > 0:
+            update_quest_progress(user_id, 'xp', xp_earned)
+        update_streak_and_rewards(user)
+        
+        return jsonify({
+            'multi_question': True,
+            'results': results,
+            'xp_earned': xp_earned,
+            'gems_earned': gems_earned,
+            'completed': user_ex.completed if not is_revision else True,
+            'total_correct': correct_count,
+            'total_questions': len(results)
+        }), 200
+    
+    # ---------- Format classique (une seule question) ----------
     else:
-        # Révision
+        user_answer = data.get('answer', '').strip()
+        is_correct, _ = compare_answers(user_answer, exercise.correct_answer)
+        base_xp = exercise.xp_reward if hasattr(exercise, 'xp_reward') else map_difficulty_to_xp(exercise.difficulty)
+        
         user_ex = UserExercise.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
-        if not user_ex or not user_ex.completed:
-            return jsonify({'msg': 'Exercise not completed yet, cannot revise'}), 400
-        user_ex.revision_attempts = (user_ex.revision_attempts or 0) + 1
-        user_ex.last_review_date = datetime.utcnow()
-        if is_correct:
-            xp_reward = 5
-            gems_reward = 0
+        
+        if not is_revision:
+            if user_ex and user_ex.completed:
+                return jsonify({'msg': 'Exercise already completed'}), 400
+            if not user_ex:
+                user_ex = UserExercise(user_id=user_id, exercise_id=exercise_id)
+                db.session.add(user_ex)
+            
+            if is_correct:
+                user_ex.completed = True
+                xp_reward = base_xp
+                gems_reward = 2
+            else:
+                xp_reward = -3
+                gems_reward = 0
         else:
-            xp_reward = 0
-            gems_reward = 0
-
-    user = User.query.get(user_id)
-    user.total_xp = (user.total_xp or 0) + xp_reward
-    user.gems = (user.gems or 0) + gems_reward
-    db.session.commit()
-
-    update_quest_progress(user_id, 'exercises', 1 if not is_revision and is_correct else 0)
-    update_quest_progress(user_id, 'xp', xp_reward)
-    update_streak_and_rewards(user)
-
-    return jsonify({
-        'correct': is_correct,
-        'correct_answer': exercise.correct_answer,
-        'explanation': exercise.explanation,
-        'xp_earned': xp_reward,
-        'gems_earned': gems_reward,
-        'completed': user_ex.completed if not is_revision else True
-    }), 200
+            if not user_ex or not user_ex.completed:
+                return jsonify({'msg': 'Exercise not completed yet, cannot revise'}), 400
+            user_ex.revision_attempts = (user_ex.revision_attempts or 0) + 1
+            user_ex.last_review_date = datetime.utcnow()
+            if is_correct:
+                xp_reward = 5
+                gems_reward = 0
+            else:
+                xp_reward = 0
+                gems_reward = 0
+        
+        user = User.query.get(user_id)
+        new_total_xp = (user.total_xp or 0) + xp_reward
+        if new_total_xp < 0:
+            new_total_xp = 0
+        user.total_xp = new_total_xp
+        user.gems = (user.gems or 0) + gems_reward
+        db.session.commit()
+        
+        update_quest_progress(user_id, 'exercises', 1 if not is_revision and is_correct else 0)
+        if xp_reward > 0:
+            update_quest_progress(user_id, 'xp', xp_reward)
+        update_streak_and_rewards(user)
+        
+        return jsonify({
+            'correct': is_correct,
+            'correct_answer': exercise.correct_answer,
+            'explanation': exercise.explanation,
+            'xp_earned': xp_reward,
+            'gems_earned': gems_reward,
+            'completed': user_ex.completed if not is_revision else True
+        }), 200

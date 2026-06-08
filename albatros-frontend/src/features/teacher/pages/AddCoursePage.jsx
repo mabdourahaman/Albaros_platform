@@ -16,6 +16,9 @@ export default function AddCoursePage() {
     difficulty: "medium",
     tags: "",
   });
+  const handleFileChange = (e) => {
+  setFile(e.target.files[0]);
+};
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");

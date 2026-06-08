@@ -162,11 +162,15 @@ export default function ManageQuizzesPage() {
                 <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-slate-900"}`}>
                   {quiz.title}
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">Subject ID: {quiz.subject_id}</p>
-                <p className="text-sm mt-1">
+                <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                  Subject ID: {quiz.subject_id}
+                </p>
+                <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
                   Difficulty: <span className="capitalize">{quiz.difficulty}</span>
                 </p>
-                <p className="text-sm mt-1">Questions: {quiz.question_count}</p>
+                <p className={`text-sm mt-1 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                  Questions: {quiz.question_count}
+                </p>
                 <div className="mt-4 flex justify-between gap-4">
                   <Button variant="outline" size="sm" className="flex-1 text-center" onClick={() => openEditModal(quiz)}>
                     Edit
@@ -232,7 +236,9 @@ export default function ManageQuizzesPage() {
                   {editForm.questions.length > 1 && (
                     <button type="button" onClick={() => removeQuestion(idx)} className="absolute top-2 right-2 text-red-500">✕</button>
                   )}
-                  <h4 className="font-bold mb-2">Question #{idx+1}</h4>
+                  <h4 className={`font-bold mb-2 ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    Question #{idx+1}
+                  </h4>                  
                   <textarea
                     placeholder="Question text"
                     rows={2}

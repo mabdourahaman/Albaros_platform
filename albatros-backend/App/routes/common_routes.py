@@ -95,7 +95,12 @@ def get_course_file(course_id):
 @jwt_required()
 def get_quizzes():
     quizzes = Quiz.query.all()
-    return jsonify([{"id": q.id, "title": q.title, "difficulty": q.difficulty} for q in quizzes]), 200
+    return jsonify([{
+        "id": q.id,
+        "title": q.title,
+        "difficulty": q.difficulty,
+        "subject_id": q.subject_id   # ← ajout essentiel
+    } for q in quizzes]), 200
 
 @common_bp.route('/quiz/<int:quiz_id>/questions', methods=['GET'])
 @jwt_required()
