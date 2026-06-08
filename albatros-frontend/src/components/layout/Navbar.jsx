@@ -1,26 +1,34 @@
-// src/components/layout/Navbar.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Menu, LogOut } from "lucide-react";
+import { Bell, Menu, LogOut, Settings } from "lucide-react";
 import SettingsControls from "../common/SettingsControls";
 import { useSettings } from "../../context/SettingsContext";
 import { logoutUser } from "../../services/authService";
 
-export default function Navbar({ role, onMenuClick }) {   // ← onMenuClick ajouté
+export default function Navbar({ role, onMenuClick }) {
   const { darkMode, t } = useSettings();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
 
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
   const title = {
-    student: t.studentDashboard,
-    teacher: t.teacherDashboard,
-    admin: t.adminDashboard,
+    student: t.studentDashboard || "Student Dashboard",
+    teacher: t.teacherDashboard || "Teacher Dashboard",
+    admin: t.adminDashboard || "Admin Dashboard",
   };
 
-  const handleLogout = () => {
-    logoutUser(); // supprime token et user du localStorage
+  function handleLogout() {
+    logoutUser();
     navigate("/");
-  };
+  }
+
+  function handleSettings() {
+    setShowDropdown(false);
+    navigate(`/${role}/settings`);
+  }
+
+  const avatarLetter = user.username ? user.username.charAt(0).toUpperCase() : "A";
 
   return (
     <header
@@ -32,16 +40,24 @@ export default function Navbar({ role, onMenuClick }) {   // ← onMenuClick ajo
     >
       <div className="flex items-center gap-3">
         <button
-          onClick={onMenuClick}   // ← gestionnaire ajouté
-          className={`lg:hidden w-10 h-10 rounded-xl flex items-center justify-center ${
-            darkMode ? "bg-slate-900" : "bg-slate-100"
+          type="button"
+          onClick={onMenuClick}
+          className={`lg:hidden w-10 h-10 rounded-xl flex items-center justify-center transition ${
+            darkMode
+              ? "bg-slate-900 hover:bg-slate-800"
+              : "bg-slate-100 hover:bg-slate-200"
           }`}
         >
           <Menu size={22} />
         </button>
+
         <div>
           <h2 className="text-lg font-bold capitalize">{title[role]}</h2>
-          <p className={darkMode ? "text-sm text-slate-400" : "text-sm text-slate-500"}>
+          <p
+            className={`text-sm ${
+              darkMode ? "text-slate-400" : "text-slate-500"
+            }`}
+          >
             Albatros
           </p>
         </div>
@@ -51,45 +67,80 @@ export default function Navbar({ role, onMenuClick }) {   // ← onMenuClick ajo
         <SettingsControls />
 
         <button
-          className={`hidden sm:flex w-10 h-10 rounded-full items-center justify-center ${
-            darkMode ? "bg-slate-900" : "bg-slate-100"
+          type="button"
+          className={`hidden sm:flex w-10 h-10 rounded-full items-center justify-center transition ${
+            darkMode
+              ? "bg-slate-900 hover:bg-slate-800"
+              : "bg-slate-100 hover:bg-slate-200"
           }`}
         >
           <Bell size={20} />
         </button>
 
-        {/* Avatar avec menu déroulant */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => setShowDropdown(!showDropdown)}
             className="w-10 h-10 rounded-full bg-cyan-500 text-white flex items-center justify-center font-bold hover:bg-cyan-600 transition"
           >
-            A
+            {avatarLetter}
           </button>
+
           {showDropdown && (
             <>
-              {/* Clic en dehors pour fermer */}
               <div
                 className="fixed inset-0 z-10"
                 onClick={() => setShowDropdown(false)}
               />
+
               <div
-                className={`absolute right-0 mt-2 w-48 rounded-xl shadow-lg border z-20 ${
+                className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg border z-20 overflow-hidden ${
                   darkMode
                     ? "bg-slate-900 border-slate-700"
                     : "bg-white border-slate-200"
                 }`}
               >
+                <div
+                  className={`px-4 py-3 border-b ${
+                    darkMode ? "border-slate-700" : "border-slate-100"
+                  }`}
+                >
+                  <p className="font-bold text-sm">
+                    {user.username || "Albatros User"}
+                  </p>
+                  <p
+                    className={`text-xs capitalize ${
+                      darkMode ? "text-slate-400" : "text-slate-500"
+                    }`}
+                  >
+                    {user.role || role}
+                  </p>
+                </div>
+
                 <button
-                  onClick={handleLogout}
-                  className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm font-bold rounded-xl transition ${
+                  type="button"
+                  onClick={handleSettings}
+                  className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm font-bold transition ${
                     darkMode
                       ? "hover:bg-slate-800 text-slate-200"
                       : "hover:bg-slate-100 text-slate-700"
                   }`}
                 >
+                  <Settings size={18} />
+                  <span>{t.settings || "Settings"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm font-bold transition border-t ${
+                    darkMode
+                      ? "hover:bg-slate-800 text-slate-200 border-slate-700"
+                      : "hover:bg-slate-100 text-slate-700 border-slate-100"
+                  }`}
+                >
                   <LogOut size={18} />
-                  <span>{t.logout || "Se déconnecter"}</span>
+                  <span>{t.logout || "Logout"}</span>
                 </button>
               </div>
             </>

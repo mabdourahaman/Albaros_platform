@@ -1,9 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
+
 import HomePage from "../features/home/HomePage";
 import LoginPage from "../features/auth/LoginPage";
 import RegisterPage from "../features/auth/RegisterPage";
-
-import RoleSelectionPage from "../features/auth/RoleSelectionPage";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
 
@@ -26,20 +25,23 @@ import AdminDashboard from "../features/admin/pages/AdminDashboard";
 import UserManagementPage from "../features/admin/pages/UserManagementPage";
 import SubjectsManagementPage from "../features/admin/pages/SubjectsManagementPage";
 import ContentManagementPage from "../features/admin/pages/ContentManagementPage";
-import StudentLoginPage from "../features/auth/StudentLoginPage";
-import TeacherLoginPage from "../features/auth/TeacherLoginPage";
-import AdminLoginPage from "../features/auth/AdminLoginPage";
 import PendingUsersPage from "../features/admin/pages/PendingUsersPage";
 
-export const router = createBrowserRouter([
-  { path: "/", element: <HomePage /> },
-  { path: "/login", element: <LoginPage /> },
-  { path: "/register", element: <RegisterPage /> },
-  { path: "/login/student", element: <StudentLoginPage /> },
-  { path: "/login/teacher", element: <TeacherLoginPage /> },
-  { path: "/login/admin", element: <AdminLoginPage /> },
-  { path: "/role-selection", element: <RoleSelectionPage /> },
+import AccountSettingsPage from "../features/account/pages/AccountSettingsPage";
 
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <HomePage />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
+  },
   {
     path: "/student",
     element: <DashboardLayout role="student" />,
@@ -47,14 +49,14 @@ export const router = createBrowserRouter([
       { index: true, element: <StudentDashboard /> },
       { path: "courses", element: <CoursesPage /> },
       { path: "quiz", element: <QuizPage /> },
-      { path: "quiz/:id", element: <QuizPage /> },          // ← ici
+      { path: "quiz/:id", element: <QuizPage /> },
       { path: "exercises", element: <ExercisesPage /> },
       { path: "recommendations", element: <RecommendationsPage /> },
       { path: "progress", element: <ProgressPage /> },
       { path: "scores", element: <ScoresHistoryPage /> },
+      { path: "settings", element: <AccountSettingsPage /> },
     ],
   },
-
   {
     path: "/teacher",
     element: <DashboardLayout role="teacher" />,
@@ -65,18 +67,19 @@ export const router = createBrowserRouter([
       { path: "exercises/add", element: <AddExercisePage /> },
       { path: "students", element: <StudentStatsPage /> },
       { path: "monitoring", element: <ProgressMonitoringPage /> },
+      { path: "settings", element: <AccountSettingsPage /> },
     ],
   },
-
   {
     path: "/admin",
     element: <DashboardLayout role="admin" />,
     children: [
       { index: true, element: <AdminDashboard /> },
       { path: "users", element: <UserManagementPage /> },
-      { path: "pending-users", element: <PendingUsersPage /> },  // ← ajout
+      { path: "pending-users", element: <PendingUsersPage /> },
       { path: "subjects", element: <SubjectsManagementPage /> },
       { path: "content", element: <ContentManagementPage /> },
+      { path: "settings", element: <AccountSettingsPage /> },
     ],
   },
 ]);

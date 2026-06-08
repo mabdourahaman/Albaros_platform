@@ -2,13 +2,21 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useSettings } from "../../context/SettingsContext";
 import SettingsControls from "../../components/common/SettingsControls";
-import { BookOpen, GraduationCap, Menu, X, UserPlus, Mail, Phone, MapPin } from "lucide-react";
+import {
+  BookOpen,
+  GraduationCap,
+  Menu,
+  X,
+  UserPlus,
+  Mail,
+  Phone,
+  MapPin,
+  LogIn,
+} from "lucide-react";
 import heroImage from "../../assets/home_page_pic.jpg";
 
 export default function HomePage() {
   const { language, darkMode, setLanguage } = useSettings();
-
-  const [staffMenuOpen, setStaffMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const content = {
@@ -19,10 +27,7 @@ export default function HomePage() {
       contact: "Contact",
       login: "Login",
       register: "Register",
-      teacherLogin: "Teacher Login",
-      adminLogin: "Admin Login",
-      staffAccess: "Staff Access",
-      studentAccess: "Student Access",
+      userAccess: "User Access",
       badge: "Best Online Learning Platform",
       title: "Get Educated Online From Your Home",
       description:
@@ -43,13 +48,17 @@ export default function HomePage() {
       coursesSubtitle:
         "Albatros offers essential school subjects with lessons, exercises, quizzes, and personalized recommendations.",
       math: "Mathematics",
-      mathText: "Learn numbers, operations, geometry, problem solving, and practice with interactive exercises.",
+      mathText:
+        "Learn numbers, operations, geometry, problem solving, and practice with interactive exercises.",
       french: "French",
-      frenchText: "Improve reading, writing, grammar, vocabulary, and communication skills.",
+      frenchText:
+        "Improve reading, writing, grammar, vocabulary, and communication skills.",
       english: "English",
-      englishText: "Build vocabulary, grammar, pronunciation, reading, and simple communication skills.",
+      englishText:
+        "Build vocabulary, grammar, pronunciation, reading, and simple communication skills.",
       informatics: "Informatics",
-      informaticsText: "Discover computers, files, internet basics, digital tools, and introduction to programming.",
+      informaticsText:
+        "Discover computers, files, internet basics, digital tools, and introduction to programming.",
       contactTitle: "Contact Us",
       contactSubtitle:
         "Need help or more information? Contact the Albatros team.",
@@ -65,10 +74,7 @@ export default function HomePage() {
       contact: "Contact",
       login: "Connexion",
       register: "Inscription",
-      teacherLogin: "Connexion Enseignant",
-      adminLogin: "Connexion Admin",
-      staffAccess: "Accès Personnel",
-      studentAccess: "Accès Élève",
+      userAccess: "Accès Utilisateur",
       badge: "Meilleure plateforme d'apprentissage en ligne",
       title: "Apprenez en ligne depuis chez vous",
       description:
@@ -89,13 +95,17 @@ export default function HomePage() {
       coursesSubtitle:
         "Albatros propose des matières essentielles avec des leçons, exercices, quiz et recommandations personnalisées.",
       math: "Mathématiques",
-      mathText: "Apprenez les nombres, les opérations, la géométrie, les problèmes et entraînez-vous avec des exercices.",
+      mathText:
+        "Apprenez les nombres, les opérations, la géométrie, les problèmes et entraînez-vous avec des exercices.",
       french: "Français",
-      frenchText: "Améliorez la lecture, l’écriture, la grammaire, le vocabulaire et la communication.",
+      frenchText:
+        "Améliorez la lecture, l’écriture, la grammaire, le vocabulaire et la communication.",
       english: "Anglais",
-      englishText: "Développez le vocabulaire, la grammaire, la prononciation, la lecture et la communication simple.",
+      englishText:
+        "Développez le vocabulaire, la grammaire, la prononciation, la lecture et la communication simple.",
       informatics: "Informatique",
-      informaticsText: "Découvrez l’ordinateur, les fichiers, internet, les outils numériques et les bases de la programmation.",
+      informaticsText:
+        "Découvrez l’ordinateur, les fichiers, internet, les outils numériques et les bases de la programmation.",
       contactTitle: "Contactez-nous",
       contactSubtitle:
         "Besoin d’aide ou d’informations ? Contactez l’équipe Albatros.",
@@ -111,10 +121,7 @@ export default function HomePage() {
       contact: "اتصل بنا",
       login: "تسجيل الدخول",
       register: "إنشاء حساب",
-      teacherLogin: "دخول الأستاذ",
-      adminLogin: "دخول المسؤول",
-      staffAccess: "دخول الطاقم",
-      studentAccess: "دخول التلميذ",
+      userAccess: "دخول المستخدم",
       badge: "أفضل منصة للتعلم عن بعد",
       title: "تعلم عبر الإنترنت من منزلك",
       description:
@@ -135,13 +142,16 @@ export default function HomePage() {
       coursesSubtitle:
         "توفر ألباتروس مواد أساسية مع دروس وتمارين واختبارات وتوصيات مخصصة.",
       math: "الرياضيات",
-      mathText: "تعلم الأعداد، العمليات، الهندسة، حل المسائل والتدرب بتمارين تفاعلية.",
+      mathText:
+        "تعلم الأعداد، العمليات، الهندسة، حل المسائل والتدرب بتمارين تفاعلية.",
       french: "الفرنسية",
       frenchText: "تحسين القراءة، الكتابة، القواعد، المفردات ومهارات التواصل.",
       english: "الإنجليزية",
-      englishText: "تطوير المفردات، القواعد، النطق، القراءة والتواصل البسيط.",
+      englishText:
+        "تطوير المفردات، القواعد، النطق، القراءة والتواصل البسيط.",
       informatics: "الإعلاميات",
-      informaticsText: "اكتشاف الحاسوب، الملفات، الإنترنت، الأدوات الرقمية وأساسيات البرمجة.",
+      informaticsText:
+        "اكتشاف الحاسوب، الملفات، الإنترنت، الأدوات الرقمية وأساسيات البرمجة.",
       contactTitle: "اتصل بنا",
       contactSubtitle:
         "هل تحتاج إلى مساعدة أو معلومات؟ تواصل مع فريق ألباتروس.",
@@ -176,22 +186,7 @@ export default function HomePage() {
         }`}
       >
         <nav className="h-20 flex items-center justify-between">
-          <div className="h-full px-4 md:px-10 flex items-center gap-3 relative">
-            <button
-              type="button"
-              onClick={() => {
-                setStaffMenuOpen(!staffMenuOpen);
-                setMobileMenuOpen(false);
-              }}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
-                darkMode
-                  ? "text-white hover:bg-slate-800"
-                  : "text-slate-800 hover:bg-slate-100"
-              }`}
-            >
-              {staffMenuOpen ? <X size={28} /> : <Menu size={30} />}
-            </button>
-
+          <div className="h-full px-4 md:px-10 flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-lg bg-cyan-500 text-white flex items-center justify-center">
                 <GraduationCap size={28} />
@@ -201,36 +196,6 @@ export default function HomePage() {
                 ALBATROS
               </span>
             </Link>
-
-            {staffMenuOpen && (
-              <div
-                className={`absolute top-16 left-4 md:left-10 w-72 rounded-2xl border shadow-2xl p-3 z-[9999] ${dropdownBox}`}
-              >
-                <p
-                  className={`px-4 py-2 text-xs font-extrabold uppercase tracking-widest ${dropdownTitle}`}
-                >
-                  {t.staffAccess}
-                </p>
-
-                <Link
-                  to="/login/teacher"
-                  onClick={() => setStaffMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-4 rounded-xl font-extrabold transition ${dropdownItem}`}
-                >
-                  <BookOpen size={22} />
-                  {t.teacherLogin}
-                </Link>
-
-                <Link
-                  to="/login/admin"
-                  onClick={() => setStaffMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-4 rounded-xl font-extrabold transition ${dropdownItem}`}
-                >
-                  <GraduationCap size={22} />
-                  {t.adminLogin}
-                </Link>
-              </div>
-            )}
           </div>
 
           <div className="hidden lg:flex items-center gap-10 font-bold uppercase text-sm tracking-wide">
@@ -264,18 +229,26 @@ export default function HomePage() {
             <SettingsControls />
 
             <Link
-              to="/login/student"
+              to="/login"
               className="hidden md:flex items-center justify-center min-w-[115px] px-6 py-3 rounded-xl bg-cyan-500 text-white font-extrabold hover:bg-cyan-600 transition shadow-sm"
             >
               {t.login}
             </Link>
 
+            <Link
+              to="/register"
+              className={`hidden md:flex items-center justify-center min-w-[115px] px-6 py-3 rounded-xl font-extrabold transition shadow-sm border ${
+                darkMode
+                  ? "bg-slate-900 text-white border-slate-700 hover:bg-slate-800"
+                  : "bg-white text-slate-900 border-slate-200 hover:bg-slate-100"
+              }`}
+            >
+              {t.register}
+            </Link>
+
             <button
               type="button"
-              onClick={() => {
-                setMobileMenuOpen(!mobileMenuOpen);
-                setStaffMenuOpen(false);
-              }}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`md:hidden w-12 h-12 rounded-xl flex items-center justify-center transition ${
                 darkMode
                   ? "bg-slate-900 text-white border border-slate-700 hover:bg-slate-800"
@@ -292,15 +265,15 @@ export default function HomePage() {
                 <p
                   className={`px-4 py-2 text-xs font-extrabold uppercase tracking-widest ${dropdownTitle}`}
                 >
-                  {t.studentAccess}
+                  {t.userAccess}
                 </p>
 
                 <Link
-                  to="/login/student"
+                  to="/login"
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-4 py-4 rounded-xl font-extrabold transition ${dropdownItem}`}
                 >
-                  <GraduationCap size={22} />
+                  <LogIn size={22} />
                   {t.login}
                 </Link>
 
@@ -326,27 +299,33 @@ export default function HomePage() {
                 ? "bg-slate-900 border-slate-700 text-white"
                 : "bg-white border-slate-200 text-slate-700"
             }`}
->
-          <option
-            value="en"
-            className={darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"}
           >
-            English
-          </option>
+            <option
+              value="en"
+              className={
+                darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"
+              }
+            >
+              English
+            </option>
 
-          <option
-            value="fr"
-            className={darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"}
-          >
-            Français
-          </option>
+            <option
+              value="fr"
+              className={
+                darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"
+              }
+            >
+              Français
+            </option>
 
-          <option
-            value="ar"
-            className={darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"}
-          >
-           العربية
-          </option>
+            <option
+              value="ar"
+              className={
+                darkMode ? "bg-slate-900 text-white" : "bg-white text-slate-900"
+              }
+            >
+              العربية
+            </option>
           </select>
         </div>
       </header>
@@ -382,7 +361,7 @@ export default function HomePage() {
 
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link
-                to="/login/student"
+                to="/login"
                 className="px-8 py-4 bg-cyan-500 text-white font-extrabold text-center hover:bg-cyan-600 transition rounded-xl shadow-lg"
               >
                 {t.primaryBtn}
@@ -468,9 +447,21 @@ export default function HomePage() {
 
           <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <CourseCard darkMode={darkMode} title={t.math} text={t.mathText} />
-            <CourseCard darkMode={darkMode} title={t.french} text={t.frenchText} />
-            <CourseCard darkMode={darkMode} title={t.english} text={t.englishText} />
-            <CourseCard darkMode={darkMode} title={t.informatics} text={t.informaticsText} />
+            <CourseCard
+              darkMode={darkMode}
+              title={t.french}
+              text={t.frenchText}
+            />
+            <CourseCard
+              darkMode={darkMode}
+              title={t.english}
+              text={t.englishText}
+            />
+            <CourseCard
+              darkMode={darkMode}
+              title={t.informatics}
+              text={t.informaticsText}
+            />
           </div>
         </div>
       </section>
