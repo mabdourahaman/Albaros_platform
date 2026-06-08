@@ -31,7 +31,14 @@ export default function Navbar({ role, onMenuClick }) {
   const handleLogout = () => {
     logoutUser();
     navigate("/");
-  };
+  }
+
+  function handleSettings() {
+    setShowDropdown(false);
+    navigate(`/${role}/settings`);
+  }
+
+  const avatarLetter = user.username ? user.username.charAt(0).toUpperCase() : "A";
 
   return (
     <header className={`h-20 border-b flex items-center justify-between px-4 md:px-8 ${darkMode ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-100 text-slate-900"}`}>
@@ -39,6 +46,7 @@ export default function Navbar({ role, onMenuClick }) {
         <button onClick={onMenuClick} className={`lg:hidden w-10 h-10 rounded-xl flex items-center justify-center ${darkMode ? "bg-slate-900" : "bg-slate-100"}`}>
           <Menu size={22} />
         </button>
+
         <div>
           <h2 className="text-lg font-bold capitalize">
             {role === "student" ? "Student Dashboard" : role === "teacher" ? "Teacher Dashboard" : "Admin Dashboard"}
@@ -54,14 +62,15 @@ export default function Navbar({ role, onMenuClick }) {
           <Bell size={20} />
         </button>
 
-        {/* Avatar avec menu déroulant */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => setShowDropdown(!showDropdown)}
             className="w-10 h-10 rounded-full bg-cyan-500 text-white flex items-center justify-center font-bold hover:bg-cyan-600 transition"
           >
             {userInitial}
           </button>
+
           {showDropdown && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />

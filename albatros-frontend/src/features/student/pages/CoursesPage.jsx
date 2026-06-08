@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
+import { BookOpen } from "lucide-react";
 import Card from "../../../components/common/Card";
-import api from "../../../services/api";
 import Loader from "../../../components/common/Loader";
-import { useSettings } from "../../../context/SettingsContext";
+import { getCourses } from "../../../services/courseService";
 
 export default function CoursesPage() {
-  const { darkMode } = useSettings();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,7 +13,7 @@ export default function CoursesPage() {
   const [fileExtension, setFileExtension] = useState("");
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    async function loadCourses() {
       try {
         const response = await api.get("/student/courses");
         setCourses(response.data);
@@ -23,8 +22,9 @@ export default function CoursesPage() {
       } finally {
         setLoading(false);
       }
-    };
-    fetchCourses();
+    }
+
+    loadCourses();
   }, []);
 
   const openCourseFile = (course) => {
@@ -53,7 +53,7 @@ export default function CoursesPage() {
       <h1 className="text-3xl font-extrabold">Courses</h1>
       <p className="mt-2">Browse your available courses and open the materials.</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mt-6">
         {courses.map((course) => (
           <Card key={course.id}>
             <h2 className="text-xl font-extrabold">{course.title}</h2>

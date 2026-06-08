@@ -4,80 +4,161 @@ import { useSettings } from "../../../context/SettingsContext";
 
 export default function PendingUsersPage() {
   const { darkMode } = useSettings();
-  const [users, setUsers] = useState([]);
+
+  const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetchPending();
-  }, []);
-
-  const fetchPending = async () => {
+  async function fetchPendingUsers() {
     try {
-      const res = await api.get("/admin/pending_users");
-      setUsers(res.data);
+      setLoading(true);
+      const response = await api.get("/admin/pending_users");
+      setPendingUsers(response.data);
     } catch (err) {
-      console.error(err);
+      setError("Failed to load pending users.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleApprove = async (id) => {
-    await api.post(`/admin/approve_user/${id}`);
-    fetchPending();
-  };
+  async function approveUser(user) {
+    setMessage("");
+    setError("");
 
-  const handleReject = async (id) => {
-    await api.post(`/admin/reject_user/${id}`);
-    fetchPending();
-  };
+    try {
+      await api.post(`/admin/approve_user/${user.id}`, {
+        role: user.role,
+        subject: user.subject,
+      });
 
-  if (loading) return <div className={`text-center py-10 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>Chargement...</div>;
+      setMessage("User approved successfully.");
+      fetchPendingUsers();
+    } catch (err) {
+      setError(err.response?.data?.msg || "Failed to approve user.");
+    }
+  }
+
+  async function rejectUser(id) {
+    setMessage("");
+    setError("");
+
+    try {
+      await api.post(`/admin/reject_user/${id}`);
+      setMessage("User rejected successfully.");
+      fetchPendingUsers();
+    } catch (err) {
+      setError(err.response?.data?.msg || "Failed to reject user.");
+    }
+  }
+
+  useEffect(() => {
+    fetchPendingUsers();
+  }, []);
 
   return (
     <div>
-      <h1 className={`text-3xl font-extrabold ${darkMode ? "text-white" : "text-slate-900"}`}>
-        Inscriptions en attente
-      </h1>
-      <p className={`mt-2 ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-        Validez ou rejetez les comptes en attente.
-      </p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold">Pending Users</h1>
+          <p className={darkMode ? "text-slate-400" : "text-slate-500"}>
+            Review student and teacher registration requests.
+          </p>
+        </div>
 
-      <div className={`mt-6 rounded-2xl border ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-100"}`}>
-        {users.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-            Aucune inscription en attente.
+        <button
+          onClick={fetchPendingUsers}
+          className="rounded-xl bg-cyan-500 px-5 py-3 text-white font-bold hover:bg-cyan-600 transition"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {message && (
+        <div className="mt-6 rounded-2xl bg-green-50 px-5 py-4 text-green-700 font-bold">
+          {message}
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-6 rounded-2xl bg-red-50 px-5 py-4 text-red-700 font-bold">
+          {error}
+        </div>
+      )}
+
+      <div
+        className={`mt-8 rounded-3xl border overflow-hidden ${
+          darkMode
+            ? "bg-slate-900 border-slate-800"
+            : "bg-white border-slate-100"
+        }`}
+      >
+        {loading ? (
+          <div className="p-8 text-center font-bold">Loading...</div>
+        ) : pendingUsers.length === 0 ? (
+          <div className="p-8 text-center">
+            <h2 className="text-xl font-extrabold">No pending users</h2>
+            <p className={darkMode ? "text-slate-400" : "text-slate-500"}>
+              All registration requests have been processed.
+            </p>
           </div>
         ) : (
-          <ul className="divide-y divide-slate-200 dark:divide-slate-700">
-            {users.map((user) => (
-              <li key={user.id} className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <div>
-                  <p className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>
-                    {user.username} <span className="text-sm font-normal">({user.massar})</span>
-                  </p>
-                  <p className={`text-sm ${darkMode ? "text-slate-400" : "text-slate-500"}`}>{user.email}</p>
-                  <p className={`text-xs mt-1 ${darkMode ? "text-slate-500" : "text-slate-400"}`}>
-                    Inscrit le {new Date(user.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleApprove(user.id)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead
+                className={
+                  darkMode
+                    ? "bg-slate-950 text-slate-300"
+                    : "bg-slate-50 text-slate-600"
+                }
+              >
+                <tr>
+                  <th className="px-6 py-4 text-sm font-extrabold">Name</th>
+                  <th className="px-6 py-4 text-sm font-extrabold">Email</th>
+                  <th className="px-6 py-4 text-sm font-extrabold">Role</th>
+                  <th className="px-6 py-4 text-sm font-extrabold">Massar</th>
+                  <th className="px-6 py-4 text-sm font-extrabold">Level</th>
+                  <th className="px-6 py-4 text-sm font-extrabold">Subject</th>
+                  <th className="px-6 py-4 text-sm font-extrabold">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {pendingUsers.map((user) => (
+                  <tr
+                    key={user.id}
+                    className={`border-t ${
+                      darkMode ? "border-slate-800" : "border-slate-100"
+                    }`}
                   >
-                    Approuver
-                  </button>
-                  <button
-                    onClick={() => handleReject(user.id)}
-                    className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition"
-                  >
-                    Rejeter
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                    <td className="px-6 py-4 font-bold">{user.username}</td>
+                    <td className="px-6 py-4">{user.email}</td>
+                    <td className="px-6 py-4 capitalize">{user.role}</td>
+                    <td className="px-6 py-4">{user.massar || "-"}</td>
+                    <td className="px-6 py-4">{user.level || "-"}</td>
+                    <td className="px-6 py-4">{user.subject || "-"}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => approveUser(user)}
+                          className="rounded-xl bg-green-500 px-4 py-2 text-white font-bold hover:bg-green-600 transition"
+                        >
+                          Approve
+                        </button>
+
+                        <button
+                          onClick={() => rejectUser(user.id)}
+                          className="rounded-xl bg-red-500 px-4 py-2 text-white font-bold hover:bg-red-600 transition"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

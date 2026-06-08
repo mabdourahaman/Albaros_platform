@@ -126,7 +126,11 @@ export default function AddExercisePage() {
     } else {
       setMessage(`⚠️ ${success} succès, ${errors.length} échec(s) : ${errors.join("; ")}`);
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   const isErrorMessage = (msg) => {
     const lowerMsg = msg.toLowerCase();

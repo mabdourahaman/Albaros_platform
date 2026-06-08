@@ -1,4 +1,3 @@
-// src/components/layout/DashboardLayout.jsx
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
@@ -9,8 +8,13 @@ export default function DashboardLayout({ role }) {
   const { darkMode } = useSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
-  const closeMobileMenu = () => setMobileMenuOpen(false);
+  function toggleMobileMenu() {
+    setMobileMenuOpen((prev) => !prev);
+  }
+
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
+  }
 
   return (
     <div

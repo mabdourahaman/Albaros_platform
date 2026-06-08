@@ -41,7 +41,11 @@ export default function AddCoursePage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e) => setFile(e.target.files[0]);
+  const inputClass = `w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500 ${
+    darkMode
+      ? "bg-slate-950 border-slate-700 text-white placeholder:text-slate-500"
+      : "bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+  }`;
 
   const handleReset = () => {
     setForm({
@@ -89,6 +93,7 @@ export default function AddCoursePage() {
       await api.post("/teacher/courses/with_file", formData, {
         headers: { "Content-Type": undefined },
       });
+
       navigate("/teacher/courses");
     } catch (err) {
       const msg = err.response?.data?.msg || "Erreur lors de la création du cours.";
@@ -97,7 +102,7 @@ export default function AddCoursePage() {
     } finally {
       setUploading(false);
     }
-  };
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
